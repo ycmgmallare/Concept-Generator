@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FrontEnd — Design Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:    #f4eee1;
+    --paper-2:  #ece4d3;
+    --panel:    #f9f5ec;
+    --ink:      #1d1813;
+    --ink-soft: #6a6055;
+    --line:     #d7ccb6;
+    --line-2:   #c6b9a0;
+    --accent:   #d2452a;       /* vermilion */
+    --cat-min:  #3f6b59;       /* minimalist  — calm green */
+    --cat-con:  #b06a25;       /* contemporary — amber     */
+    --cat-dyn:  #c2362a;       /* dynamic     — red        */
+    --shadow:   18px 18px 0 rgba(29,24,19,.06);
+    --r: 3px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Newsreader", Georgia, serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(210,69,42,.05), transparent 30%),
+      radial-gradient(circle at 88% 0%, rgba(63,107,89,.05), transparent 28%);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* faint paper grain */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: .5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  .mono { font-family: "JetBrains Mono", monospace; }
+
+  /* ---------- header ---------- */
+  header.masthead {
+    position: relative; z-index: 1;
+    border-bottom: 2px solid var(--ink);
+    padding: 34px clamp(20px, 5vw, 64px) 26px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap;
+  }
+  .brand-tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: .32em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 4px;
+  }
+  h1.brand {
+    font-family: "Fraunces", serif;
+    font-optical-sizing: auto;
+    font-weight: 600; font-size: clamp(46px, 9vw, 104px);
+    line-height: .9; margin: 0; letter-spacing: -.02em;
+  }
+  h1.brand em { font-style: italic; font-weight: 300; color: var(--accent); }
+  .masthead-note {
+    max-width: 320px; text-align: right;
+    color: var(--ink-soft); font-size: 15px;
+  }
+  .masthead-note .mono { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
+
+  /* ---------- control panel ---------- */
+  .wrap { position: relative; z-index: 1; padding: 0 clamp(20px, 5vw, 64px) 90px; }
+
+  .console {
+    margin-top: 34px;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow);
+    border-radius: var(--r);
+  }
+  .console-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px; border-bottom: 1.5px solid var(--line-2);
+  }
+  .console-head .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(210,69,42,.18); }
+  .console-head h2 { font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; margin: 0; font-weight: 700; }
+
+  .fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .field { padding: 20px; border-right: 1px solid var(--line); }
+  .field:last-child { border-right: none; }
+  .field label {
+    display: block; font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 9px;
+  }
+  .field label b { color: var(--accent); font-weight: 700; }
+  .field input {
+    width: 100%; border: none; background: transparent;
+    font-family: "Newsreader", serif; font-size: 19px; color: var(--ink);
+    padding: 6px 0; border-bottom: 1.5px solid var(--line-2); outline: none;
+    transition: border-color .2s;
+  }
+  .field input::placeholder { color: #b3a892; font-style: italic; }
+  .field input:focus { border-bottom-color: var(--accent); }
+
+  .console-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    padding: 16px 20px; border-top: 1.5px solid var(--line-2);
+    background: var(--paper-2);
+  }
+  #status { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-soft); letter-spacing: .04em; }
+  #status .live { color: var(--accent); }
+  .foot-actions { display: flex; gap: 12px; align-items: center; }
+
+  button {
+    font-family: "JetBrains Mono", monospace; cursor: pointer;
+    border: 1.5px solid var(--ink); background: var(--panel); color: var(--ink);
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 500;
+    padding: 11px 16px; border-radius: var(--r); transition: transform .12s, background .2s, color .2s, box-shadow .2s;
+  }
+  button:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 rgba(29,24,19,.18); }
+  button:active { transform: translate(0,0); box-shadow: none; }
+  button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+  button.primary { background: var(--ink); color: var(--paper); font-weight: 700; padding: 13px 26px; }
+  button.primary:hover { background: var(--accent); border-color: var(--accent); }
+  button.ghost { padding: 8px 12px; font-size: 11px; }
+
+  /* ---------- category sections ---------- */
+  .cat-section { margin-top: 64px; }
+  .cat-bar { display: flex; align-items: baseline; gap: 18px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+  .cat-bar .cat-no { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-soft); }
+  .cat-bar h3 { font-family: "Fraunces", serif; font-weight: 600; font-size: clamp(26px,4vw,40px); margin: 0; letter-spacing: -.01em; }
+  .cat-bar .cat-desc { color: var(--ink-soft); font-style: italic; font-size: 15px; margin-left: auto; text-align: right; }
+  .cat-chip { width: 13px; height: 13px; border-radius: 50%; display: inline-block; }
+
+  /* ---------- design cards ---------- */
+  .cards { display: grid; gap: 28px; margin-top: 28px; }
+  .card {
+    background: var(--panel); border: 1.5px solid var(--ink);
+    border-radius: var(--r); box-shadow: var(--shadow);
+    overflow: hidden; opacity: 0; transform: translateY(14px);
+    animation: rise .6s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .card-head { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-bottom: 1.5px solid var(--line-2); flex-wrap: wrap; }
+  .card-no { font-family: "Fraunces", serif; font-weight: 300; font-size: 42px; line-height: 1; color: var(--accent); min-width: 56px; }
+  .card-meta { display: flex; flex-direction: column; gap: 3px; }
+  .badge {
+    align-self: flex-start; font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px; color: #fff; font-weight: 700;
+  }
+  .card-name { font-family: "Fraunces", serif; font-weight: 600; font-size: 27px; line-height: 1.05; }
+  .card-actions { margin-left: auto; display: flex; gap: 9px; }
+
+  .card-desc-wrap { padding: 16px 22px 6px; }
+  .card-desc-wrap .lbl, .panel .lbl {
+    font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--ink-soft); display: block; margin-bottom: 7px;
+  }
+  textarea {
+    width: 100%; resize: vertical; font-family: "Newsreader", serif; font-size: 16px;
+    color: var(--ink); background: var(--paper); border: 1px solid var(--line-2);
+    border-radius: var(--r); padding: 10px 12px; outline: none; line-height: 1.45;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(210,69,42,.12); }
+  .card-desc-wrap textarea { min-height: 56px; }
+
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 14px 0 0; }
+  .panel { padding: 14px 22px 22px; border-right: 1px solid var(--line); }
+  .panel:last-child { border-right: none; }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .panel-head .pt { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
+  .panel-head .ps { font-size: 13px; color: var(--ink-soft); font-style: italic; }
+
+  .frame {
+    position: relative; aspect-ratio: 16/9; width: 100%;
+    background: var(--paper-2); border: 1px solid var(--line-2);
+    border-radius: var(--r); overflow: hidden; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .frame .ph { text-align: center; color: var(--ink-soft); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; padding: 16px; }
+  .frame .ph.err { color: var(--accent); }
+  .spinner {
+    width: 26px; height: 26px; border: 2.5px solid var(--line-2); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .prompt-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .prompt-row .mini { display: flex; gap: 6px; }
+  button.mini { padding: 4px 8px; font-size: 10px; }
+  .saved-flag { font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--cat-min); letter-spacing: .08em; opacity: 0; transition: opacity .2s; }
+  .saved-flag.show { opacity: 1; }
+  .panel textarea { min-height: 92px; font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--paper); font-family: "JetBrains Mono", monospace;
+    font-size: 12px; letter-spacing: .06em; padding: 12px 20px; border-radius: var(--r);
+    opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .empty { text-align: center; color: var(--ink-soft); padding: 80px 20px; font-style: italic; font-size: 18px; }
+  .empty .mono { display: block; font-style: normal; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 12px; color: var(--ink); }
+
+  @media (max-width: 760px) {
+    .fields { grid-template-columns: 1fr; }
+    .field { border-right: none; border-bottom: 1px solid var(--line); }
+    .field:last-child { border-bottom: none; }
+    .panels { grid-template-columns: 1fr; }
+    .panel { border-right: none; border-bottom: 1px solid var(--line); }
+    .panel:last-child { border-bottom: none; }
+    .masthead-note { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <p class="brand-tag">Website Moodboard Studio · Kie AI</p>
+    <h1 class="brand">Front<em>End</em></h1>
+  </div>
+  <div class="masthead-note">
+    <span class="mono">Six directions · one idea</span><br />
+    Give an idea, a theme, and your products. Get six homepage design directions —
+    rendered, editable, exportable.
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ CONTROL CONSOLE ============ -->
+  <section class="console">
+    <div class="console-head">
+      <span class="dot"></span>
+      <h2>Brief</h2>
+    </div>
+    <div class="fields">
+      <div class="field">
+        <label for="idea"><b>01</b> &nbsp; Idea</label>
+        <input id="idea" type="text" autocomplete="off" placeholder="e.g. a slow-coffee subscription" />
+      </div>
+      <div class="field">
+        <label for="theme"><b>02</b> &nbsp; Theme</label>
+        <input id="theme" type="text" autocomplete="off" placeholder="e.g. warm, earthy, artisanal" />
+      </div>
+      <div class="field">
+        <label for="products"><b>03</b> &nbsp; Products</label>
+        <input id="products" type="text" autocomplete="off" placeholder="e.g. single-origin beans, brew kits" />
+      </div>
+    </div>
+    <div class="console-foot">
+      <div id="status">Idle — fill the brief and generate.</div>
+      <div class="foot-actions">
+        <button id="exportAll" class="ghost" disabled>Export all · .html</button>
+        <button id="clearBtn" class="ghost" disabled>Clear</button>
+        <button id="generateBtn" class="primary">Generate Now →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <div id="results">
+    <div class="empty">
+      <span class="mono">No designs yet</span>
+      Your six moodboards — two Minimalist, two Contemporary, two Dynamic —
+      will appear here once you generate.
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ----------------------------------------------------------------------
+  // Persistence — one localStorage key holds the whole studio state, so the
+  // brief, prompts, edits, and image URLs all survive a refresh.
+  // ----------------------------------------------------------------------
+  const STORAGE_KEY = "frontend.designs.v1";
+  const CAT_COLORS = { Minimalist: "var(--cat-min)", Contemporary: "var(--cat-con)", Dynamic: "var(--cat-dyn)" };
+  const CAT_DESCS = {
+    Minimalist: "Clean · whitespace-forward · restrained palette",
+    Contemporary: "Modern trends · expressive but professional",
+    Dynamic: "High contrast · bold type · visually striking",
+  };
+
+  let state = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* ignore corrupt state */ }
+    return { inputs: { idea: "", theme: "", products: "" }, concepts: [], generatedAt: null };
+  }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+  // ----------------------------------------------------------------------
+  // DOM refs + helpers
+  // ----------------------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const ideaEl = $("idea"), themeEl = $("theme"), productsEl = $("products");
+  const generateBtn = $("generateBtn"), clearBtn = $("clearBtn"), exportAllBtn = $("exportAll");
+  const statusEl = $("status"), resultsEl = $("results"), toastEl = $("toast");
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function setStatus(html) { statusEl.innerHTML = html; }
+  let toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+  }
+
+  // ----------------------------------------------------------------------
+  // Render
+  // ----------------------------------------------------------------------
+  function rehydrateInputs() {
+    ideaEl.value = state.inputs.idea || "";
+    themeEl.value = state.inputs.theme || "";
+    productsEl.value = state.inputs.products || "";
+  }
+
+  function render() {
+    const has = state.concepts.length > 0;
+    clearBtn.disabled = !has;
+    exportAllBtn.disabled = !has;
+
+    if (!has) {
+      resultsEl.innerHTML =
+        '<div class="empty"><span class="mono">No designs yet</span>' +
+        "Your six moodboards — two Minimalist, two Contemporary, two Dynamic — " +
+        "will appear here once you generate.</div>";
+      return;
+    }
+
+    const order = ["Minimalist", "Contemporary", "Dynamic"];
+    let html = "";
+    order.forEach((cat, ci) => {
+      const items = state.concepts.filter((c) => c.category === cat);
+      if (!items.length) return;
+      html +=
+        '<section class="cat-section">' +
+          '<div class="cat-bar">' +
+            '<span class="cat-chip" style="background:' + CAT_COLORS[cat] + '"></span>' +
+            '<span class="cat-no">0' + (ci + 1) + " / 03</span>" +
+            "<h3>" + cat + "</h3>" +
+            '<span class="cat-desc">' + CAT_DESCS[cat] + "</span>" +
+          "</div>" +
+          '<div class="cards">' + items.map(cardHTML).join("") + "</div>" +
+        "</section>";
+    });
+    resultsEl.innerHTML = html;
+    wireCards();
+  }
+
+  function imgFrame(c, side) {
+    const url = c[side + "ImageUrl"], st = c[side + "State"] || "idle";
+    if (url) return '<img src="' + esc(url) + '" alt="' + esc(c.conceptName + " " + side) + '" loading="lazy" />';
+    if (st === "pending") return '<div class="ph"><div class="spinner"></div>Rendering…</div>';
+    if (st === "error") return '<div class="ph err">Render failed.<br/>Use ↻ to retry.</div>';
+    return '<div class="ph">Awaiting generation</div>';
+  }
+
+  function panelHTML(c, side, title, sub) {
+    const promptVal = side === "front" ? c.frontPrompt : c.backPrompt;
+    return (
+      '<div class="panel">' +
+        '<div class="panel-head"><span class="pt">' + title + '</span><span class="ps">' + sub + "</span></div>" +
+        '<div class="frame" data-side="' + side + '">' + imgFrame(c, side) + "</div>" +
+        '<div class="prompt-row">' +
+          '<span class="lbl">' + side + " image prompt</span>" +
+          '<span class="mini">' +
+            '<button class="mini ghost" data-act="copy" data-side="' + side + '">Copy</button>' +
+            '<button class="mini ghost" data-act="regen" data-side="' + side + '">↻ Render</button>' +
+            '<span class="saved-flag" data-flag="' + side + '">saved ✓</span>' +
+          "</span>" +
+        "</div>" +
+        '<textarea data-edit="' + side + 'Prompt">' + esc(promptVal) + "</textarea>" +
+      "</div>"
+    );
+  }
+
+  function cardHTML(c) {
+    const n = String(c.number).padStart(2, "0");
+    return (
+      '<article class="card" data-n="' + c.number + '" style="animation-delay:' + (c.number * 0.06) + 's">' +
+        '<div class="card-head">' +
+          '<span class="card-no">' + n + "</span>" +
+          '<div class="card-meta">' +
+            '<span class="badge" style="background:' + CAT_COLORS[c.category] + '">' + c.category + "</span>" +
+            '<span class="card-name">' + esc(c.conceptName) + "</span>" +
+          "</div>" +
+          '<div class="card-actions">' +
+            '<button class="ghost" data-act="regen-card">↻ Regenerate</button>' +
+            '<button class="ghost" data-act="export-card">Save .html</button>' +
+          "</div>" +
+        "</div>" +
+        '<div class="card-desc-wrap">' +
+          '<span class="lbl">Visual direction <span style="text-transform:none;letter-spacing:0;font-style:italic;">(editable — saved automatically)</span></span>' +
+          '<textarea data-edit="description">' + esc(c.description) + "</textarea>" +
+        "</div>" +
+        '<div class="panels">' +
+          panelHTML(c, "front", "Front", "homepage layout") +
+          panelHTML(c, "back", "Back", "inner sections") +
+        "</div>" +
+      "</article>"
+    );
+  }
+
+  // Attach listeners after each render.
+  function wireCards() {
+    document.querySelectorAll(".card").forEach((card) => {
+      const n = Number(card.dataset.n);
+      const concept = () => state.concepts.find((c) => c.number === n);
+
+      // Editable fields -> persist on input (auto-save) + flash "saved".
+      card.querySelectorAll("textarea[data-edit]").forEach((ta) => {
+        ta.addEventListener("input", () => {
+          const c = concept(); if (!c) return;
+          c[ta.dataset.edit] = ta.value;
+          save();
+          const side = ta.dataset.edit.replace("Prompt", "");
+          const flag = card.querySelector('[data-flag="' + side + '"]');
+          if (flag) { flag.classList.add("show"); clearTimeout(flag._t); flag._t = setTimeout(() => flag.classList.remove("show"), 1200); }
+        });
+      });
+
+      // Button actions.
+      card.querySelectorAll("button[data-act]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const c = concept(); if (!c) return;
+          const act = btn.dataset.act, side = btn.dataset.side;
+          if (act === "copy") {
+            navigator.clipboard.writeText(side === "front" ? c.frontPrompt : c.backPrompt)
+              .then(() => toast("Prompt copied to clipboard"));
+          } else if (act === "regen") {
+            renderImage(c, side);
+          } else if (act === "regen-card") {
+            renderImage(c, "front"); renderImage(c, "back");
+          } else if (act === "export-card") {
+            exportDesigns([c], "frontend-design-" + String(c.number).padStart(2, "0") + "-" + slug(c.conceptName));
+          }
+        });
+      });
+    });
+  }
+
+  // ----------------------------------------------------------------------
+  // Kie image generation (via the local /api proxy)
+  // ----------------------------------------------------------------------
+  async function renderImage(concept, side) {
+    const promptText = side === "front" ? concept.frontPrompt : concept.backPrompt;
+    concept[side + "State"] = "pending";
+    concept[side + "ImageUrl"] = null;
+    save(); refreshFrame(concept, side);
+
+    try {
+      const res = await fetch("/api/generate/image", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: promptText, aspect_ratio: concept.aspectRatio || "16:9" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.taskId) throw new Error(data.error || "Could not start render.");
+
+      // Poll until the task finishes (~ up to 3 min).
+      for (let i = 0; i < 45; i++) {
+        await sleep(4000);
+        const sres = await fetch("/api/task/image?taskId=" + encodeURIComponent(data.taskId));
+        const sdata = await sres.json();
+        if (sdata.state === "success" && sdata.urls && sdata.urls.length) {
+          concept[side + "ImageUrl"] = sdata.urls[0];
+          concept[side + "State"] = "done";
+          save(); refreshFrame(concept, side);
+          return true;
+        }
+        if (sdata.state === "fail") throw new Error(sdata.failMsg || "Generation failed.");
+      }
+      throw new Error("Timed out waiting for the image.");
+    } catch (err) {
+      concept[side + "State"] = "error";
+      save(); refreshFrame(concept, side);
+      toast("⚠ " + (err.message || "Render failed"));
+      return false;
+    }
+  }
+
+  // Swap just one frame's contents without a full re-render (keeps edits/focus).
+  function refreshFrame(concept, side) {
+    const card = document.querySelector('.card[data-n="' + concept.number + '"]');
+    if (!card) return;
+    const panel = card.querySelector('.frame[data-side="' + side + '"]');
+    if (panel) panel.innerHTML = imgFrame(concept, side);
+  }
+
+  // ----------------------------------------------------------------------
+  // Generate flow
+  // ----------------------------------------------------------------------
+  async function generate() {
+    const inputs = {
+      idea: ideaEl.value.trim(), theme: themeEl.value.trim(), products: productsEl.value.trim(),
+    };
+    if (!inputs.idea || !inputs.theme || !inputs.products) {
+      toast("Fill in Idea, Theme, and Products first."); return;
+    }
+
+    generateBtn.disabled = true;
+    setStatus('<span class="live">●</span> Composing six design briefs…');
+
+    let concepts;
+    try {
+      const res = await fetch("/api/concepts", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inputs),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not build concepts.");
+      concepts = data.concepts.map((c) => ({
+        ...c, frontImageUrl: null, backImageUrl: null, frontState: "pending", backState: "pending",
+      }));
+    } catch (err) {
+      setStatus("Idle.");
+      generateBtn.disabled = false;
+      toast("⚠ " + err.message);
+      return;
+    }
+
+    state = { inputs, concepts, generatedAt: new Date().toISOString() };
+    save(); render();
+
+    // Fire all 12 renders (front + back × 6) in parallel; persist as they land.
+    setStatus('<span class="live">●</span> Rendering 12 images via Kie AI… this can take a couple of minutes.');
+    const jobs = [];
+    concepts.forEach((c) => { jobs.push(renderImage(c, "front")); jobs.push(renderImage(c, "back")); });
+
+    let done = 0;
+    jobs.forEach((p) => p.then(() => {
+      done++;
+      setStatus(done < jobs.length
+        ? '<span class="live">●</span> Rendered ' + done + " / " + jobs.length + " images…"
+        : "✓ Done — " + jobs.length + " images. Edit prompts or export any design.");
+    }));
+
+    await Promise.allSettled(jobs);
+    generateBtn.disabled = false;
+  }
+
+  // ----------------------------------------------------------------------
+  // Export designs as a standalone .html file
+  // ----------------------------------------------------------------------
+  const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  function designBlock(c) {
+    const n = String(c.number).padStart(2, "0");
+    const img = (u, label) => u
+      ? '<img src="' + esc(u) + '" alt="' + esc(label) + '" style="width:100%;border:1px solid #ddd;border-radius:4px;display:block;margin:8px 0;">'
+      : '<p style="color:#999;font-style:italic;">[ no image generated ]</p>';
+    return (
+      '<section style="margin:0 0 56px;padding-bottom:40px;border-bottom:1px solid #e3e3e3;">' +
+        '<p style="font:700 12px/1 monospace;letter-spacing:.2em;text-transform:uppercase;color:#c2362a;margin:0 0 6px;">Design ' + n + " · " + esc(c.category) + "</p>" +
+        '<h2 style="font:600 30px/1.1 Georgia,serif;margin:0 0 8px;">' + esc(c.conceptName) + "</h2>" +
+        '<p style="font:16px/1.5 Georgia,serif;color:#444;max-width:60ch;">' + esc(c.description) + "</p>" +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;">' +
+          '<div><h3 style="font:700 11px/1 monospace;letter-spacing:.14em;text-transform:uppercase;">Front · homepage</h3>' +
+            img(c.frontImageUrl, c.conceptName + " front") +
+            '<p style="font:12px/1.5 monospace;color:#555;white-space:pre-wrap;">' + esc(c.frontPrompt) + "</p></div>" +
+          '<div><h3 style="font:700 11px/1 monospace;letter-spacing:.14em;text-transform:uppercase;">Back · inner sections</h3>' +
+            img(c.backImageUrl, c.conceptName + " back") +
+            '<p style="font:12px/1.5 monospace;color:#555;white-space:pre-wrap;">' + esc(c.backPrompt) + "</p></div>" +
+        "</div>" +
+      "</section>"
+    );
+  }
+
+  function exportDesigns(concepts, filename) {
+    const { idea, theme, products } = state.inputs;
+    const doc =
+      "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">" +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      "<title>FrontEnd export — " + esc(idea || "designs") + "</title></head>" +
+      '<body style="margin:0;background:#f4eee1;color:#1d1813;padding:48px clamp(20px,5vw,80px);">' +
+        '<header style="border-bottom:2px solid #1d1813;padding-bottom:20px;margin-bottom:40px;">' +
+          '<p style="font:700 11px/1 monospace;letter-spacing:.3em;text-transform:uppercase;color:#c2362a;margin:0 0 6px;">FrontEnd · Website Moodboard</p>' +
+          '<h1 style="font:600 44px/1 Georgia,serif;margin:0;">' + esc(idea || "Design directions") + "</h1>" +
+          '<p style="font:15px/1.6 Georgia,serif;color:#555;margin:14px 0 0;">' +
+            "<b>Theme:</b> " + esc(theme) + " &nbsp;·&nbsp; <b>Products:</b> " + esc(products) + "</p>" +
+        "</header>" +
+        concepts.map(designBlock).join("") +
+        '<footer style="font:11px/1.5 monospace;color:#999;text-align:center;margin-top:24px;">Generated with FrontEnd · images via Kie AI</footer>' +
+      "</body></html>";
+
+    const blob = new Blob([doc], { type: "text/html" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (filename || "frontend-designs") + ".html";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+    toast("Saved " + a.download);
+  }
+
+  // ----------------------------------------------------------------------
+  // Wire top-level controls + boot
+  // ----------------------------------------------------------------------
+  generateBtn.addEventListener("click", generate);
+  exportAllBtn.addEventListener("click", () =>
+    exportDesigns(state.concepts, "frontend-designs-" + slug(state.inputs.idea || "moodboard")));
+  clearBtn.addEventListener("click", () => {
+    if (!confirm("Clear all six designs and saved prompts? This cannot be undone.")) return;
+    state = { inputs: state.inputs, concepts: [], generatedAt: null };
+    save(); render(); setStatus("Cleared. Generate to start again.");
+  });
+
+  // Persist brief edits live so they survive a refresh even before generating.
+  [ideaEl, themeEl, productsEl].forEach((el, i) => {
+    const key = ["idea", "theme", "products"][i];
+    el.addEventListener("input", () => { state.inputs[key] = el.value; save(); });
+  });
+
+  rehydrateInputs();
+  render();
+  if (state.generatedAt) {
+    const d = new Date(state.generatedAt);
+    setStatus("Restored " + state.concepts.length + " designs from " + d.toLocaleString() + ".");
+  }
+})();
+</script>
+</body>
+</html>

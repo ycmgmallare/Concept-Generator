@@ -1,0 +1,17 @@
+{
+  "name": "frontend-design-moodboard-generator",
+  "version": "1.0.0",
+  "description": "FrontEnd — generates six homepage design moodboards (Minimalist / Contemporary / Dynamic) as images via Kie AI.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
