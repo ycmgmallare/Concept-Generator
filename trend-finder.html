@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trend Finder — FrontEnd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:    #f4eee1;
+    --paper-2:  #ece4d3;
+    --panel:    #f9f5ec;
+    --ink:      #1d1813;
+    --ink-soft: #6a6055;
+    --line:     #d7ccb6;
+    --line-2:   #c6b9a0;
+    --accent:   #d2452a;       /* vermilion */
+    --cat-min:  #3f6b59;       /* calm green */
+    --shadow:   18px 18px 0 rgba(29,24,19,.06);
+    --r: 3px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Newsreader", Georgia, serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(210,69,42,.05), transparent 30%),
+      radial-gradient(circle at 88% 0%, rgba(63,107,89,.05), transparent 28%);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: .5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  .mono { font-family: "JetBrains Mono", monospace; }
+
+  /* ---------- header ---------- */
+  header.masthead {
+    position: relative; z-index: 1;
+    border-bottom: 2px solid var(--ink);
+    padding: 34px clamp(20px, 5vw, 64px) 26px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap;
+  }
+  .brand-tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: .32em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 4px;
+  }
+  h1.brand {
+    font-family: "Fraunces", serif;
+    font-optical-sizing: auto;
+    font-weight: 600; font-size: clamp(46px, 9vw, 104px);
+    line-height: .9; margin: 0; letter-spacing: -.02em;
+  }
+  h1.brand em { font-style: italic; font-weight: 300; color: var(--accent); }
+  .masthead-note {
+    max-width: 320px; text-align: right;
+    color: var(--ink-soft); font-size: 15px;
+  }
+  .masthead-note .mono { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
+
+  /* ---------- navigation ---------- */
+  nav.nav {
+    position: relative; z-index: 1;
+    display: flex; gap: 28px; flex-wrap: wrap;
+    padding: 0 clamp(20px, 5vw, 64px);
+    border-bottom: 1.5px solid var(--ink);
+    background: var(--paper-2);
+  }
+  .nav-link {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none;
+    padding: 15px 2px; border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px; transition: color .2s, border-color .2s;
+  }
+  .nav-link:hover { color: var(--ink); }
+  .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
+  /* ---------- control panel ---------- */
+  .wrap { position: relative; z-index: 1; padding: 0 clamp(20px, 5vw, 64px) 90px; }
+
+  .console {
+    margin-top: 34px;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow);
+    border-radius: var(--r);
+  }
+  .console-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px; border-bottom: 1.5px solid var(--line-2);
+  }
+  .console-head .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(210,69,42,.18); }
+  .console-head h2 { font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; margin: 0; font-weight: 700; }
+
+  .field { padding: 20px; }
+  .field label {
+    display: block; font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 9px;
+  }
+  .field label b { color: var(--accent); font-weight: 700; }
+  .field input {
+    width: 100%; border: none; background: transparent;
+    font-family: "Newsreader", serif; font-size: 19px; color: var(--ink);
+    padding: 6px 0; border-bottom: 1.5px solid var(--line-2); outline: none;
+    transition: border-color .2s;
+  }
+  .field input::placeholder { color: #b3a892; font-style: italic; }
+  .field input:focus { border-bottom-color: var(--accent); }
+
+  .console-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    padding: 16px 20px; border-top: 1.5px solid var(--line-2);
+    background: var(--paper-2);
+  }
+  #status { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-soft); letter-spacing: .04em; }
+  #status .live { color: var(--accent); }
+  .foot-actions { display: flex; gap: 12px; align-items: center; }
+
+  button {
+    font-family: "JetBrains Mono", monospace; cursor: pointer;
+    border: 1.5px solid var(--ink); background: var(--panel); color: var(--ink);
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 500;
+    padding: 11px 16px; border-radius: var(--r); transition: transform .12s, background .2s, color .2s, box-shadow .2s;
+  }
+  button:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 rgba(29,24,19,.18); }
+  button:active { transform: translate(0,0); box-shadow: none; }
+  button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+  button.primary { background: var(--ink); color: var(--paper); font-weight: 700; padding: 13px 26px; }
+  button.primary:hover { background: var(--accent); border-color: var(--accent); }
+
+  /* ---------- results ---------- */
+  .results-bar { display: flex; align-items: baseline; gap: 18px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-top: 64px; }
+  .results-bar .r-no { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-soft); }
+  .results-bar h3 { font-family: "Fraunces", serif; font-weight: 600; font-size: clamp(26px,4vw,40px); margin: 0; letter-spacing: -.01em; }
+  .results-bar .r-desc { color: var(--ink-soft); font-style: italic; font-size: 15px; margin-left: auto; text-align: right; }
+
+  .cards { display: grid; gap: 28px; margin-top: 28px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .card {
+    background: var(--panel); border: 1.5px solid var(--ink);
+    border-radius: var(--r); box-shadow: var(--shadow);
+    overflow: hidden; display: flex; flex-direction: column;
+    opacity: 0; transform: translateY(14px);
+    animation: rise .6s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .frame {
+    position: relative; aspect-ratio: 4/3; width: 100%;
+    background: var(--paper-2); border-bottom: 1.5px solid var(--line-2);
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .frame .ph { text-align: center; color: var(--ink-soft); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; padding: 16px; }
+
+  .card-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .card-no { font-family: "Fraunces", serif; font-weight: 300; font-size: 32px; line-height: 1; color: var(--accent); }
+  .badge {
+    align-self: flex-start; font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px; color: #fff; font-weight: 700;
+    background: var(--cat-min); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .card-name {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 19px; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card-foot { margin-top: auto; }
+  a.primary {
+    display: inline-block; text-decoration: none; text-align: center; width: 100%;
+    font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; font-weight: 700;
+    background: var(--ink); color: var(--paper); border: 1.5px solid var(--ink);
+    padding: 12px 16px; border-radius: var(--r);
+    transition: transform .12s, background .2s, box-shadow .2s;
+  }
+  a.primary:hover { background: var(--accent); border-color: var(--accent); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 rgba(29,24,19,.18); }
+
+  .empty { text-align: center; color: var(--ink-soft); padding: 80px 20px; font-style: italic; font-size: 18px; }
+  .empty .mono { display: block; font-style: normal; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 12px; color: var(--ink); }
+  .empty.err .mono { color: var(--accent); }
+
+  .spinner {
+    width: 26px; height: 26px; border: 2.5px solid var(--line-2); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--paper); font-family: "JetBrains Mono", monospace;
+    font-size: 12px; letter-spacing: .06em; padding: 12px 20px; border-radius: var(--r);
+    opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 760px) {
+    .masthead-note { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <p class="brand-tag">Trend Finder · Live from eBay</p>
+    <h1 class="brand">Trend<em>Finder</em></h1>
+  </div>
+  <div class="masthead-note">
+    <span class="mono">Any topic · top 5 trending</span><br />
+    Type a topic and pull the top trending products for it — live from the web,
+    with images, sources, and links straight to the listing.
+  </div>
+</header>
+
+<nav class="nav">
+  <a class="nav-link" href="/">Moodboard Studio</a>
+  <a class="nav-link active" href="/trend-finder.html">Trend Finder</a>
+  <a class="nav-link" href="http://localhost:3002/trend-finder-upgrade.html">Trend Finder Upgrade</a>
+</nav>
+
+<div class="wrap">
+
+  <!-- ============ SEARCH CONSOLE ============ -->
+  <section class="console">
+    <div class="console-head">
+      <span class="dot"></span>
+      <h2>Search</h2>
+    </div>
+    <div class="field">
+      <label for="topic"><b>01</b> &nbsp; Topic</label>
+      <input id="topic" type="text" autocomplete="off" placeholder="e.g. mechanical keyboard, running shoes, vinyl records" />
+    </div>
+    <div class="console-foot">
+      <div id="status">Idle — type a topic and find trends.</div>
+      <div class="foot-actions">
+        <button id="exportBtn" disabled>Export CSV</button>
+        <button id="printBtn" disabled>Print report</button>
+        <button id="findBtn" class="primary">Find Trends →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <div id="results">
+    <div class="empty">
+      <span class="mono">No search yet</span>
+      The top five trending products for your topic will appear here once you search.
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // The Flask trend API runs separately from this page (Node serves the page on
+  // :3000; Flask serves the data on :5000). CORS is enabled server-side.
+  const API_BASE = "http://localhost:5000";
+
+  const topicInput = document.getElementById("topic");
+  const findBtn = document.getElementById("findBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const printBtn = document.getElementById("printBtn");
+  const statusEl = document.getElementById("status");
+  const resultsEl = document.getElementById("results");
+  const toastEl = document.getElementById("toast");
+
+  // Last search, kept so the dated report can be exported/printed.
+  let lastResults = [], lastTopic = "", lastDate = "";
+  const todayStr = () => new Date().toISOString().slice(0, 10);
+
+  let toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+  }
+
+  function setStatus(html) { statusEl.innerHTML = html; }
+
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  function showLoading(topic) {
+    resultsEl.innerHTML =
+      '<div class="empty"><div class="spinner"></div>' +
+      '<span class="mono">Searching</span>Finding trending products for “' +
+      esc(topic) + '” …</div>';
+  }
+
+  function showEmpty(topic) {
+    resultsEl.innerHTML =
+      '<div class="empty"><span class="mono">No results</span>' +
+      "Couldn't find any trending products for “" + esc(topic) +
+      "”. Try a broader or different topic.</div>";
+  }
+
+  function showError(msg) {
+    resultsEl.innerHTML =
+      '<div class="empty err"><span class="mono">Something went wrong</span>' +
+      esc(msg) + "</div>";
+  }
+
+  function cardHTML(item, i) {
+    const frame = item.image
+      ? '<img src="' + esc(item.image) + '" alt="' + esc(item.name) + '" loading="lazy" />'
+      : '<div class="ph">No image available</div>';
+    return (
+      '<article class="card" style="animation-delay:' + (i * 0.07).toFixed(2) + 's">' +
+        '<div class="frame">' + frame + '</div>' +
+        '<div class="card-body">' +
+          '<div class="card-no">' + String(i + 1).padStart(2, "0") + '</div>' +
+          '<span class="badge" title="' + esc(item.source) + '">' + esc(item.source || "eBay") + '</span>' +
+          '<div class="card-name">' + esc(item.name) + '</div>' +
+          '<div class="card-foot">' +
+            '<a class="primary" href="' + esc(item.link) + '" target="_blank" rel="noopener">View on eBay →</a>' +
+          '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
+  function render(topic, results) {
+    if (!results || results.length === 0) { showEmpty(topic); return; }
+    const cards = results.map(cardHTML).join("");
+    resultsEl.innerHTML =
+      '<div class="results-bar">' +
+        '<span class="r-no">TOP ' + results.length + '</span>' +
+        '<h3>Trending for “' + esc(topic) + '”</h3>' +
+        '<span class="r-desc">Live results · sourced from eBay<br/>Captured ' + esc(lastDate) + '</span>' +
+      '</div>' +
+      '<div class="cards">' + cards + '</div>';
+  }
+
+  async function findTrends() {
+    const topic = topicInput.value.trim();
+    if (!topic) { toast("Type a topic first."); topicInput.focus(); return; }
+
+    findBtn.disabled = true;
+    setStatus('<span class="live">●</span> Searching…');
+    showLoading(topic);
+
+    try {
+      const res = await fetch(API_BASE + "/api/trends?q=" + encodeURIComponent(topic));
+      let data = {};
+      try { data = await res.json(); } catch (_) { /* non-JSON error body */ }
+
+      if (!res.ok) {
+        const msg = data.error || ("Request failed (" + res.status + ").");
+        showError(msg);
+        setStatus("Error — see results panel.");
+        return;
+      }
+
+      lastResults = data.results || [];
+      lastTopic = topic;
+      lastDate = data.captured || todayStr();
+      render(topic, lastResults);
+      const n = lastResults.length;
+      exportBtn.disabled = printBtn.disabled = n === 0;
+      setStatus(n ? ("Done — " + n + " result" + (n === 1 ? "" : "s") + " · captured " + lastDate + ".")
+                  : "Done — no results.");
+    } catch (err) {
+      // Most common cause: the Flask API isn't running.
+      showError(
+        "Couldn't reach the Trend Finder API at " + API_BASE + ". " +
+        "Make sure the Python server is running (python app.py)."
+      );
+      setStatus("Error — API unreachable.");
+    } finally {
+      findBtn.disabled = false;
+    }
+  }
+
+  // ---- dated report: CSV download -------------------------------------
+  function csvCell(v) { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function exportCSV() {
+    if (!lastResults.length) { toast("Search first, then export."); return; }
+    const header = ["Rank", "Product", "Source", "Image URL", "Listing URL", "Topic", "Captured"];
+    const lines = [header.join(",")].concat(lastResults.map((it, i) =>
+      [i + 1, it.name, it.source, it.image || "", it.link, lastTopic, lastDate].map(csvCell).join(",")));
+    const csv = "﻿" + lines.join("\r\n"); // BOM so Excel reads UTF-8
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const slug = (lastTopic || "trends").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ebay-trends-" + slug + "-" + lastDate + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+    toast("Exported " + lastResults.length + " products (" + lastDate + ").");
+  }
+
+  // ---- dated report: printable window (Save-as-PDF) -------------------
+  function printReport() {
+    if (!lastResults.length) { toast("Search first, then print."); return; }
+    const rows = lastResults.map((it, i) =>
+      '<tr><td class="r">' + (i + 1) + '</td>' +
+      '<td>' + esc(it.name) + '</td>' +
+      '<td>' + esc(it.source || "eBay") + '</td>' +
+      '<td><a href="' + esc(it.link) + '">View listing</a></td></tr>').join("");
+    const html =
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>eBay Trend Report — ' + esc(lastTopic) + '</title>' +
+      '<style>body{font-family:Georgia,serif;color:#1d1813;margin:40px;}' +
+      'h1{font-size:24px;margin:0 0 4px;}.tag{font-family:monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#d2452a;}' +
+      '.meta{color:#6a6055;font-size:13px;margin:6px 0 20px;}' +
+      'table{border-collapse:collapse;width:100%;font-size:13px;}th,td{border:1px solid #c6b9a0;padding:8px 10px;text-align:left;vertical-align:top;}' +
+      'th{background:#1d1813;color:#f4eee1;font-family:monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;}' +
+      'td.r{width:40px;color:#d2452a;font-weight:bold;}a{color:#d2452a;}footer{margin-top:24px;color:#6a6055;font-size:11px;}</style></head><body>' +
+      '<div class="tag">eBay Trend Report</div>' +
+      '<h1>Trending for &ldquo;' + esc(lastTopic) + '&rdquo;</h1>' +
+      '<div class="meta">Captured ' + esc(lastDate) + ' · Top ' + lastResults.length + ' · Source: eBay (live)</div>' +
+      '<table><thead><tr><th>#</th><th>Product</th><th>Source</th><th>Link</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<footer>Generated by Trend Finder · ' + esc(lastDate) + '</footer>' +
+      '<script>window.onload=function(){window.print();}<\/script></body></html>';
+    const w = window.open("", "_blank");
+    if (!w) { toast("Allow pop-ups to print the report."); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+
+  exportBtn.addEventListener("click", exportCSV);
+  printBtn.addEventListener("click", printReport);
+  findBtn.addEventListener("click", findTrends);
+  topicInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); findTrends(); }
+  });
+
+  topicInput.focus();
+})();
+</script>
+</body>
+</html>

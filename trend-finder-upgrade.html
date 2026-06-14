@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trend Finder Upgrade — FrontEnd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:    #f4eee1;
+    --paper-2:  #ece4d3;
+    --panel:    #f9f5ec;
+    --ink:      #1d1813;
+    --ink-soft: #6a6055;
+    --line:     #d7ccb6;
+    --line-2:   #c6b9a0;
+    --accent:   #d2452a;
+    --cat-min:  #3f6b59;
+    --warn:     #c79a1e;
+    --warn-bg:  #fbf3d6;
+    --shadow:   18px 18px 0 rgba(29,24,19,.06);
+    --shadow-s: 8px 8px 0 rgba(29,24,19,.06);
+    --r: 3px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Newsreader", Georgia, serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(210,69,42,.05), transparent 30%),
+      radial-gradient(circle at 88% 0%, rgba(63,107,89,.05), transparent 28%);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  .mono { font-family: "JetBrains Mono", monospace; }
+
+  /* header */
+  header.masthead {
+    position: relative; z-index: 1; border-bottom: 2px solid var(--ink);
+    padding: 34px clamp(20px, 5vw, 64px) 26px;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  }
+  .brand-tag { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .32em; text-transform: uppercase; color: var(--accent); margin: 0 0 4px; }
+  h1.brand { font-family: "Fraunces", serif; font-optical-sizing: auto; font-weight: 600; font-size: clamp(40px, 8vw, 92px); line-height: .9; margin: 0; letter-spacing: -.02em; }
+  h1.brand em { font-style: italic; font-weight: 300; color: var(--accent); }
+  .masthead-note { max-width: 340px; text-align: right; color: var(--ink-soft); font-size: 15px; }
+  .masthead-note .mono { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
+
+  /* nav */
+  nav.nav {
+    position: relative; z-index: 1; display: flex; gap: 28px; flex-wrap: wrap;
+    padding: 0 clamp(20px, 5vw, 64px); border-bottom: 1.5px solid var(--ink); background: var(--paper-2);
+  }
+  .nav-link {
+    font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none; padding: 15px 2px; border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px; transition: color .2s, border-color .2s;
+  }
+  .nav-link:hover { color: var(--ink); }
+  .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
+  .wrap { position: relative; z-index: 1; padding: 0 clamp(20px, 5vw, 64px) 90px; }
+
+  /* search console */
+  .console { margin-top: 34px; background: var(--panel); border: 1.5px solid var(--ink); box-shadow: var(--shadow); border-radius: var(--r); }
+  .console-head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1.5px solid var(--line-2); }
+  .console-head .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(210,69,42,.18); }
+  .console-head h2 { font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; margin: 0; font-weight: 700; }
+  .console-row { display: flex; gap: 16px; align-items: flex-end; padding: 20px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 220px; }
+  .field label { display: block; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 9px; }
+  .field label b { color: var(--accent); font-weight: 700; }
+  .field input { width: 100%; border: none; background: transparent; font-family: "Newsreader", serif; font-size: 19px; color: var(--ink); padding: 6px 0; border-bottom: 1.5px solid var(--line-2); outline: none; transition: border-color .2s; }
+  .field input::placeholder { color: #b3a892; font-style: italic; }
+  .field input:focus { border-bottom-color: var(--accent); }
+  #status { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-soft); letter-spacing: .04em; padding: 0 20px 16px; }
+  #status .live { color: var(--accent); }
+
+  button {
+    font-family: "JetBrains Mono", monospace; cursor: pointer; border: 1.5px solid var(--ink); background: var(--panel); color: var(--ink);
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 500; padding: 11px 16px; border-radius: var(--r);
+    transition: transform .12s, background .2s, color .2s, box-shadow .2s;
+  }
+  button:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 rgba(29,24,19,.18); }
+  button:active { transform: translate(0,0); box-shadow: none; }
+  button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+  button.primary { background: var(--ink); color: var(--paper); font-weight: 700; padding: 13px 26px; }
+  button.primary:hover { background: var(--accent); border-color: var(--accent); }
+  button.mini { padding: 8px 12px; font-size: 11px; }
+
+  /* layout: results left, idea panel right */
+  .layout { display: grid; grid-template-columns: 1fr 380px; gap: 28px; margin-top: 40px; align-items: start; }
+
+  .sec-bar { display: flex; align-items: baseline; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+  .sec-bar .s-no { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-soft); }
+  .sec-bar h3 { font-family: "Fraunces", serif; font-weight: 600; font-size: clamp(22px,3vw,32px); margin: 0; }
+  .sec-bar .s-desc { color: var(--ink-soft); font-style: italic; font-size: 14px; margin-left: auto; text-align: right; }
+
+  /* result cards */
+  .cards { display: grid; gap: 20px; margin-top: 24px; }
+  .card { background: var(--panel); border: 1.5px solid var(--ink); border-radius: var(--r); box-shadow: var(--shadow-s); overflow: hidden;
+          opacity: 0; transform: translateY(12px); animation: rise .5s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  .card-top { display: flex; gap: 16px; padding: 16px 18px; }
+  .thumb { width: 104px; height: 78px; flex-shrink: 0; background: var(--paper-2); border: 1px solid var(--line-2); border-radius: var(--r); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb .ph { font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: .1em; color: var(--ink-soft); text-align: center; padding: 4px; }
+  .card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .card-rank { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: .1em; }
+  .card-title { font-family: "Fraunces", serif; font-weight: 600; font-size: 17px; line-height: 1.25; }
+  .card-title a { color: inherit; text-decoration: none; }
+  .card-title a:hover { color: var(--accent); }
+  .card-src { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+  .card-actions { display: flex; gap: 9px; padding: 0 18px 16px; flex-wrap: wrap; }
+
+  /* yellow manual-redirect warning (Step 7) */
+  .warn { margin: 0 18px 16px; background: var(--warn-bg); border: 1.5px solid var(--warn); border-radius: var(--r); padding: 12px 14px; font-size: 13px; color: #6b531a; }
+  .warn .wt { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: #8a6a14; display: block; margin-bottom: 6px; }
+  .warn a { color: var(--accent); font-weight: 700; }
+  .warn .paste { display: flex; gap: 8px; margin-top: 10px; }
+  .warn .paste input { flex: 1; border: 1px solid var(--line-2); border-radius: var(--r); padding: 8px 10px; font-family: "JetBrains Mono", monospace; font-size: 12px; background: #fff; outline: none; }
+  .warn .paste input:focus { border-color: var(--accent); }
+
+  /* idea panel (right) */
+  .idea-panel { position: sticky; top: 16px; background: var(--panel); border: 1.5px solid var(--ink); border-radius: var(--r); box-shadow: var(--shadow-s); display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+  .ip-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1.5px solid var(--line-2); }
+  .ip-head h3 { font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; margin: 0; font-weight: 700; }
+  .ip-count { margin-left: auto; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--accent); font-weight: 700; }
+  .ip-list { overflow-y: auto; padding: 8px 0; flex: 1; }
+  .ip-empty { color: var(--ink-soft); font-style: italic; font-size: 14px; text-align: center; padding: 40px 20px; }
+  .idea { display: flex; gap: 10px; padding: 10px 18px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .idea:last-child { border-bottom: none; }
+  .idea input[type=checkbox] { margin-top: 4px; width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .idea-body { flex: 1; min-width: 0; }
+  .idea-text { font-size: 15px; line-height: 1.35; }
+  .idea-meta { font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
+  .tbadge { display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 8.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px; margin-right: 7px; vertical-align: 1px; color: #fff; }
+  .tbadge.tp { background: var(--cat-min); }   /* product = green */
+  .tbadge.ti { background: var(--accent); }    /* idea = accent  */
+  .idea-rm { border: none; background: transparent; color: var(--ink-soft); font-size: 15px; padding: 0 2px; cursor: pointer; box-shadow: none; }
+  .idea-rm:hover { color: var(--accent); transform: none; box-shadow: none; }
+  .ip-foot { display: flex; gap: 9px; padding: 14px 18px; border-top: 1.5px solid var(--line-2); background: var(--paper-2); }
+  .ip-foot button { flex: 1; }
+
+  /* modal */
+  .modal-back { position: fixed; inset: 0; background: rgba(29,24,19,.46); display: none; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
+  .modal-back.show { display: flex; }
+  .modal { background: var(--panel); border: 1.5px solid var(--ink); border-radius: var(--r); box-shadow: var(--shadow); width: 100%; max-width: 640px; max-height: 86vh; display: flex; flex-direction: column; }
+  .modal-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1.5px solid var(--line-2); }
+  .modal-head h3 { font-family: "Fraunces", serif; font-weight: 600; font-size: 22px; margin: 0; flex: 1; }
+  .modal-x { border: none; background: transparent; font-size: 22px; cursor: pointer; box-shadow: none; color: var(--ink-soft); }
+  .modal-x:hover { color: var(--accent); transform: none; box-shadow: none; }
+  .modal-body { padding: 8px 20px; overflow-y: auto; flex: 1; }
+  .modal-foot { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 20px; border-top: 1.5px solid var(--line-2); background: var(--paper-2); }
+  .pick { display: flex; gap: 10px; padding: 11px 4px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .pick input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .pick-text { font-size: 15px; line-height: 1.35; }
+  .pick-rank { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--accent); font-weight: 700; min-width: 24px; }
+
+  table.preview { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.preview th, table.preview td { border: 1px solid var(--line-2); padding: 7px 9px; text-align: left; vertical-align: top; }
+  table.preview th { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; background: var(--paper-2); }
+  table.preview td a { color: var(--accent); word-break: break-all; }
+
+  .spinner { width: 24px; height: 24px; border: 2.5px solid var(--line-2); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; color: var(--ink-soft); padding: 60px 20px; font-style: italic; font-size: 17px; }
+  .empty .mono { display: block; font-style: normal; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 12px; color: var(--ink); }
+  .empty.err .mono { color: var(--accent); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--paper); font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .06em; padding: 12px 20px; border-radius: var(--r); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 90; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 920px) {
+    .layout { grid-template-columns: 1fr; }
+    .idea-panel { position: static; max-height: none; }
+    .masthead-note { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <p class="brand-tag">Trend Research · Gemini Flash</p>
+    <h1 class="brand">Trend<em>Finder+</em></h1>
+  </div>
+  <div class="masthead-note">
+    <span class="mono">Articles → ideas → CSV</span><br />
+    Search trending articles, let Gemini pull the real ranked lists inside them,
+    pick the ideas you want, and export to CSV.
+  </div>
+</header>
+
+<nav class="nav">
+  <a class="nav-link" href="http://localhost:3000/">Moodboard Studio</a>
+  <a class="nav-link" href="http://localhost:3000/trend-finder.html">Trend Finder</a>
+  <a class="nav-link active" href="/trend-finder-upgrade.html">Trend Finder Upgrade</a>
+</nav>
+
+<div class="wrap">
+
+  <section class="console">
+    <div class="console-head"><span class="dot"></span><h2>Search trending articles</h2></div>
+    <div class="console-row">
+      <div class="field">
+        <label for="topic"><b>01</b> &nbsp; Topic</label>
+        <input id="topic" type="text" autocomplete="off" placeholder="e.g. best running shoes 2025, AI productivity tools, home espresso" />
+      </div>
+      <button id="searchBtn" class="primary">Search →</button>
+    </div>
+    <div id="status">Idle — search a topic to find trending articles.</div>
+  </section>
+
+  <div class="layout">
+    <!-- LEFT: results -->
+    <div>
+      <div class="sec-bar">
+        <span class="s-no">RESULTS</span>
+        <h3>Trending articles</h3>
+        <span class="s-desc">Google News · Reddit · Hacker News</span>
+      </div>
+      <div id="results">
+        <div class="empty"><span class="mono">No search yet</span>The top 5 trending articles for your topic will appear here.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: idea panel -->
+    <aside class="idea-panel">
+      <div class="ip-head">
+        <h3>Idea Panel</h3>
+        <span class="ip-count" id="ipCount">0</span>
+      </div>
+      <div class="ip-list" id="ideaList">
+        <div class="ip-empty">No ideas yet. Use <b>Extract Ideas</b> or <b>Browse &amp; Pick</b> on an article.</div>
+      </div>
+      <div class="ip-foot">
+        <button id="previewBtn" class="mini" disabled>Preview</button>
+        <button id="exportBtn" class="mini" disabled>Export CSV</button>
+        <button id="clearBtn" class="mini" disabled title="Remove all ideas">Clear</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- modal (shared: Browse & Pick + Preview) -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">—</h3>
+      <button class="modal-x" id="modalX">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const TREND_API = "http://localhost:5001"; // Flask backend
+  // Images are proxied by this same Node server (serve.mjs) to dodge hotlink/CORS.
+  const imgProxy = (u) => "/img?url=" + encodeURIComponent(u);
+
+  const $ = (id) => document.getElementById(id);
+  const topicInput = $("topic"), searchBtn = $("searchBtn"), statusEl = $("status"),
+        resultsEl = $("results"), ideaListEl = $("ideaList"), ipCountEl = $("ipCount"),
+        previewBtn = $("previewBtn"), exportBtn = $("exportBtn"), clearBtn = $("clearBtn"),
+        modalBack = $("modalBack"), modalTitle = $("modalTitle"), modalBody = $("modalBody"),
+        modalFoot = $("modalFoot"), modalX = $("modalX"), toastEl = $("toast");
+
+  let ideas = [];          // {id, rank, text, articleTitle, source, url, checked}
+  let articles = [];       // current search results
+  let nextId = 1;
+  let toastTimer = null;
+
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2800);
+  }
+  function setStatus(html) { statusEl.innerHTML = html; }
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+  const todayStr = () => new Date().toISOString().slice(0, 10);
+  const typeBadge = (t) => '<span class="tbadge ' + (t === "product" ? "tp" : "ti") + '">' + (t === "product" ? "Product" : "Idea") + '</span>';
+
+  // ----------------------------- search -----------------------------
+  async function search() {
+    const topic = topicInput.value.trim();
+    if (!topic) { toast("Type a topic first."); topicInput.focus(); return; }
+    searchBtn.disabled = true;
+    setStatus('<span class="live">●</span> Searching Google News, Reddit, Hacker News…');
+    resultsEl.innerHTML = '<div class="empty"><div class="spinner"></div><span class="mono">Searching</span>Finding trending articles…</div>';
+    try {
+      const res = await fetch(TREND_API + "/api/trending?q=" + encodeURIComponent(topic));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showErr(resultsEl, data.error || ("Request failed (" + res.status + ").")); setStatus("Error."); return; }
+      articles = data.results || [];
+      renderResults(topic);
+      setStatus(articles.length ? ("Found " + articles.length + " articles for “" + esc(topic) + "”.") : "No articles found.");
+    } catch (err) {
+      showErr(resultsEl, "Couldn't reach the API at " + TREND_API + ". Make sure server.py is running (python server.py).");
+      setStatus("Error — API unreachable.");
+    } finally { searchBtn.disabled = false; }
+  }
+
+  function showErr(el, msg) { el.innerHTML = '<div class="empty err"><span class="mono">Something went wrong</span>' + esc(msg) + "</div>"; }
+
+  function renderResults(topic) {
+    if (!articles.length) { resultsEl.innerHTML = '<div class="empty"><span class="mono">No results</span>Nothing found for “' + esc(topic) + '”. Try another topic.</div>'; return; }
+    resultsEl.innerHTML = '<div class="cards">' + articles.map((a, i) => {
+      const thumb = a.thumbnail
+        ? '<img src="' + esc(imgProxy(a.thumbnail)) + '" alt="" loading="lazy" onerror="this.parentNode.innerHTML=&quot;<div class=\\&quot;ph\\&quot;>no image</div>&quot;" />'
+        : '<div class="ph">no image</div>';
+      return (
+        '<article class="card" data-idx="' + i + '" style="animation-delay:' + (i*0.05).toFixed(2) + 's">' +
+          '<div class="card-top">' +
+            '<div class="thumb">' + thumb + '</div>' +
+            '<div class="card-info">' +
+              '<span class="card-rank">#' + a.rank + '</span>' +
+              '<div class="card-title"><a href="' + esc(a.link) + '" target="_blank" rel="noopener">' + esc(a.title) + '</a></div>' +
+              '<span class="card-src">' + esc(a.source) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-actions">' +
+            '<button class="mini" data-act="extract" data-idx="' + i + '">Extract Ideas</button>' +
+            '<button class="mini" data-act="browse" data-idx="' + i + '">Browse &amp; Pick</button>' +
+          '</div>' +
+          '<div class="warn-slot"></div>' +
+        '</article>'
+      );
+    }).join("") + '</div>';
+  }
+
+  // Delegate card button clicks.
+  resultsEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const idx = +btn.getAttribute("data-idx");
+    if (btn.getAttribute("data-act") === "extract") extractIdeas(articles[idx], btn);
+    else browsePick(articles[idx]);
+  });
+
+  // ----------------------- extract (shared call) -----------------------
+  async function callExtract(url) {
+    const res = await fetch(TREND_API + "/api/extract?url=" + encodeURIComponent(url));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ("Extract failed (" + res.status + ")."));
+    return data;
+  }
+
+  // Extract Ideas → add all items straight to the panel.
+  async function extractIdeas(article, btn) {
+    const card = btn.closest(".card");
+    const slot = card.querySelector(".warn-slot");
+    slot.innerHTML = "";
+    btn.disabled = true; const old = btn.textContent; btn.textContent = "Extracting…";
+    try {
+      const data = await callExtract(article.link);
+      if (data.needs_manual) { renderWarn(slot, data, article, (d) => addItems(d, article)); return; }
+      const n = addItems(data, article);
+      toast(n ? (n + " idea" + (n===1?"":"s") + " added" + (data.method==="fallback"?" (fallback)":"") + ".") : "No list found in that article.");
+    } catch (err) { toast(err.message); slot.innerHTML = warnHTML({reason: err.message, open_url: article.link}); }
+    finally { btn.disabled = false; btn.textContent = old; }
+  }
+
+  // Browse & Pick → modal checklist, add only selected.
+  async function browsePick(article) {
+    openModal("Browse & Pick", '<div class="empty"><div class="spinner"></div><span class="mono">Reading article</span>Gemini is extracting the list…</div>', "");
+    try {
+      const data = await callExtract(article.link);
+      if (data.needs_manual) {
+        modalBody.innerHTML = '<div class="warn">' + warnInner(data) + '</div>';
+        wireWarn(modalBody, article, (d) => { closeModal(); const n = addItems(d, article); toast(n + " ideas added."); });
+        modalFoot.innerHTML = "";
+        return;
+      }
+      const items = data.items || [];
+      if (!items.length) { modalBody.innerHTML = '<div class="empty"><span class="mono">No list found</span>This article didn\'t contain a clear ranked list.</div>'; modalFoot.innerHTML=""; return; }
+      modalBody.innerHTML = '<p style="margin:6px 0 12px;color:var(--ink-soft);font-size:14px;">Found <b>' + items.length + '</b> items' + (data.method==="fallback"?' (HTML fallback)':' via Gemini') + ' · captured ' + esc(data.captured || todayStr()) + '. Tick the ones to keep:</p>' +
+        items.map((it, i) =>
+          '<label class="pick"><input type="checkbox" data-i="' + i + '" />' +
+          '<span class="pick-rank">#' + it.rank + '</span><span class="pick-text">' + typeBadge(it.type) + esc(it.text) + '</span></label>'
+        ).join("");
+      modalFoot.innerHTML = '<button class="mini" id="pickNone">Clear all</button><button class="mini" id="pickAll">Select all</button><button class="primary" id="pickAdd">Add selected →</button>';
+      $("pickAll").onclick = () => modalBody.querySelectorAll("input").forEach(c => c.checked = true);
+      $("pickNone").onclick = () => modalBody.querySelectorAll("input").forEach(c => c.checked = false);
+      $("pickAdd").onclick = () => {
+        const chosen = [...modalBody.querySelectorAll("input")].filter(c => c.checked).map(c => items[+c.getAttribute("data-i")]);
+        if (!chosen.length) { toast("Pick at least one idea."); return; }
+        const n = addItems({ ...data, items: chosen }, article);
+        closeModal(); toast(n + " idea" + (n===1?"":"s") + " added.");
+      };
+    } catch (err) { modalBody.innerHTML = '<div class="empty err"><span class="mono">Error</span>' + esc(err.message) + "</div>"; modalFoot.innerHTML=""; }
+  }
+
+  // ----------------------- Google News warning (Step 7) -----------------------
+  function warnInner(data) {
+    return '<span class="wt">⚠ Manual step needed</span>' + esc(data.reason || "This link needs a browser to resolve.") +
+      '<div style="margin-top:8px;"><a href="' + esc(data.open_url) + '" target="_blank" rel="noopener">Open article ↗</a></div>' +
+      '<div class="paste"><input type="text" placeholder="Paste the real article URL here, then press Enter" /></div>';
+  }
+  function warnHTML(data) { return '<div class="warn">' + warnInner(data) + '</div>'; }
+  function renderWarn(slot, data, article, onDone) { slot.innerHTML = warnHTML(data); wireWarn(slot, article, onDone); }
+  function wireWarn(container, article, onDone) {
+    const input = container.querySelector(".paste input");
+    if (!input) return;
+    input.focus();
+    input.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+      const real = input.value.trim();
+      if (!/^https?:\/\//i.test(real)) { toast("Paste a full http(s) URL."); return; }
+      input.disabled = true;
+      try {
+        const d = await callExtract(real);
+        if (d.needs_manual) { toast("Still a redirect — open it and copy the final URL."); input.disabled = false; return; }
+        onDone(d);
+      } catch (err) { toast(err.message); input.disabled = false; }
+    });
+  }
+
+  // ----------------------------- idea panel -----------------------------
+  function addItems(data, article) {
+    const incoming = data.items || [];
+    const captured = data.captured || todayStr();
+    let added = 0;
+    for (const it of incoming) {
+      const text = (it.text || "").trim();
+      if (!text) continue;
+      const url = data.url || article.link;
+      if (ideas.some(x => x.text.toLowerCase() === text.toLowerCase() && x.url === url)) continue; // dedupe
+      ideas.push({ id: nextId++, rank: it.rank, text, type: it.type === "product" ? "product" : "idea",
+                   articleTitle: data.title || article.title, source: article.source, url, captured, checked: true });
+      added++;
+    }
+    renderIdeas();
+    return added;
+  }
+
+  function renderIdeas() {
+    ipCountEl.textContent = ideas.length;
+    const any = ideas.length > 0;
+    previewBtn.disabled = exportBtn.disabled = clearBtn.disabled = !any;
+    if (!any) { ideaListEl.innerHTML = '<div class="ip-empty">No ideas yet. Use <b>Extract Ideas</b> or <b>Browse &amp; Pick</b> on an article.</div>'; return; }
+    ideaListEl.innerHTML = ideas.map(it =>
+      '<div class="idea" data-id="' + it.id + '">' +
+        '<input type="checkbox" ' + (it.checked ? "checked" : "") + ' />' +
+        '<div class="idea-body"><div class="idea-text">' + typeBadge(it.type) + esc(it.text) + '</div>' +
+          '<div class="idea-meta">#' + it.rank + ' · ' + esc(it.source) + ' · ' + esc(it.captured || "") + '</div></div>' +
+        '<button class="idea-rm" title="Remove">✕</button>' +
+      '</div>'
+    ).join("");
+  }
+
+  ideaListEl.addEventListener("click", (e) => {
+    const row = e.target.closest(".idea"); if (!row) return;
+    const id = +row.getAttribute("data-id");
+    const it = ideas.find(x => x.id === id); if (!it) return;
+    if (e.target.classList.contains("idea-rm")) { ideas = ideas.filter(x => x.id !== id); renderIdeas(); }
+    else if (e.target.type === "checkbox") { it.checked = e.target.checked; }
+  });
+
+  clearBtn.onclick = () => { if (ideas.length && confirm("Remove all ideas from the panel?")) { ideas = []; renderIdeas(); } };
+
+  function selectedIdeas() {
+    const sel = ideas.filter(i => i.checked);
+    return sel.length ? sel : ideas; // if nothing ticked, act on all
+  }
+
+  // ----------------------------- preview -----------------------------
+  previewBtn.onclick = () => {
+    const rows = selectedIdeas();
+    const body = '<table class="preview"><thead><tr><th>Rank</th><th>Type</th><th>Idea / Product</th><th>Article</th><th>Source</th><th>URL</th><th>Captured</th></tr></thead><tbody>' +
+      rows.map(it => '<tr><td>' + it.rank + '</td><td>' + (it.type === "product" ? "Product" : "Idea") + '</td><td>' + esc(it.text) + '</td><td>' + esc(it.articleTitle) + '</td><td>' + esc(it.source) + '</td><td><a href="' + esc(it.url) + '" target="_blank" rel="noopener">link ↗</a></td><td>' + esc(it.captured || "") + '</td></tr>').join("") +
+      '</tbody></table>';
+    openModal("Preview — " + rows.length + " items · " + todayStr(), body, '<button class="mini" id="pvClose">Close</button><button class="primary" id="pvExport">Export CSV →</button>');
+    $("pvClose").onclick = closeModal;
+    $("pvExport").onclick = () => { closeModal(); exportCSV(); };
+  };
+
+  // ----------------------------- CSV export -----------------------------
+  function csvCell(v) { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function exportCSV() {
+    const rows = selectedIdeas();
+    if (!rows.length) { toast("No ideas to export."); return; }
+    const today = todayStr();
+    const header = ["Rank", "Type", "Idea/Product", "Article Title", "Source", "URL", "Date Captured"];
+    const lines = [header.join(",")].concat(rows.map(it =>
+      [it.rank, it.type === "product" ? "Product" : "Idea", it.text, it.articleTitle, it.source, it.url, it.captured || today].map(csvCell).join(",")));
+    const csv = "﻿" + lines.join("\r\n"); // BOM so Excel reads UTF-8
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const fname = "trend-ideas-" + today + ".csv";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+    toast("Exported " + rows.length + " items to " + fname);
+  }
+  exportBtn.onclick = exportCSV;
+
+  // ----------------------------- modal helpers -----------------------------
+  function openModal(title, bodyHTML, footHTML) {
+    modalTitle.textContent = title; modalBody.innerHTML = bodyHTML; modalFoot.innerHTML = footHTML || "";
+    modalBack.classList.add("show");
+  }
+  function closeModal() { modalBack.classList.remove("show"); }
+  modalX.onclick = closeModal;
+  modalBack.addEventListener("click", (e) => { if (e.target === modalBack) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+  searchBtn.addEventListener("click", search);
+  topicInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); search(); } });
+  topicInput.focus();
+})();
+</script>
+</body>
+</html>

@@ -72,6 +72,24 @@
   }
   .masthead-note .mono { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
 
+  /* ---------- navigation ---------- */
+  nav.nav {
+    position: relative; z-index: 1;
+    display: flex; gap: 28px; flex-wrap: wrap;
+    padding: 0 clamp(20px, 5vw, 64px);
+    border-bottom: 1.5px solid var(--ink);
+    background: var(--paper-2);
+  }
+  .nav-link {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none;
+    padding: 15px 2px; border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px; transition: color .2s, border-color .2s;
+  }
+  .nav-link:hover { color: var(--ink); }
+  .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
   /* ---------- control panel ---------- */
   .wrap { position: relative; z-index: 1; padding: 0 clamp(20px, 5vw, 64px) 90px; }
 
@@ -237,6 +255,12 @@
     rendered, editable, exportable.
   </div>
 </header>
+
+<nav class="nav">
+  <a class="nav-link active" href="/">Moodboard Studio</a>
+  <a class="nav-link" href="/trend-finder.html">Trend Finder</a>
+  <a class="nav-link" href="http://localhost:3002/trend-finder-upgrade.html">Trend Finder Upgrade</a>
+</nav>
 
 <div class="wrap">
 

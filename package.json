@@ -4,7 +4,8 @@
   "description": "FrontEnd — generates six homepage design moodboards (Minimalist / Contemporary / Dynamic) as images via Kie AI.",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "serve:research": "node serve.mjs"
   },
   "engines": {
     "node": ">=18"

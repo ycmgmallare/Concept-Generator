@@ -11,11 +11,17 @@ generated with **Kie AI** (Nano Banana).
 
 | File | Purpose |
 |------|---------|
-| `Frontend.html` | The UI — brief inputs, six design cards, editable prompts, export buttons. |
-| `server.js` | Local server: serves the page + proxies Kie AI so your key stays server-side. |
+| `Frontend.html` | The Moodboard UI — brief inputs, six design cards, editable prompts, export buttons. |
+| `server.js` | Local server: serves the pages + proxies Kie AI so your key stays server-side. |
 | `concepts.js` | **The 6 editable prompt templates.** Tweak concept names / prompts here. |
 | `.env` | Holds your `KIE_AI_API_KEY` (you fill this in). |
-| `package.json` | Dependencies (`express`, `cors`, `dotenv`). |
+| `package.json` | Node dependencies (`express`, `cors`, `dotenv`). |
+| `trend-finder.html` | The **Trend Finder** UI — search a topic, see the top 5 trending products. |
+| `app.py` | **Python/Flask** backend for Trend Finder: scrapes live eBay results. |
+| `trend-finder-upgrade.html` | The **Trend Finder Upgrade** UI — article research, idea picking, CSV export. |
+| `server.py` | **Python/Flask** backend (port 5001): article search + Gemini idea extraction. |
+| `serve.mjs` | **Node** front-end server (port 3002): serves the upgrade page + proxies images. |
+| `requirements.txt` | Python dependencies (`flask`, `flask-cors`, `requests`, `beautifulsoup4`, `feedparser`). |
 
 ## Setup
 
@@ -48,6 +54,89 @@ Edit **`concepts.js`** — each of the six concepts has a `frontPromptTemplate` 
 `backPromptTemplate` using `{idea}`, `{theme}`, `{products}` placeholders, plus shared
 `SHARED_FRONT` / `SHARED_BACK` scaffolding you can change to affect all six at once.
 Default image aspect ratio is `16:9` (set via `DEFAULT_ASPECT_RATIO`).
+
+## Trend Finder
+
+A second feature, reachable from the **Trend Finder** tab in the top navigation. Type any
+topic and it pulls the **top 5 trending products** for it — name, image, source/store, and a
+button straight to the listing — scraped **live** from eBay. No API key, and no fake/sample
+data: if nothing is found, you get a clean "no results" state.
+
+It runs as a **separate Python/Flask API** (port 5000) alongside the Node site (port 3000).
+The pages are still served by Node; Flask only serves the trend data.
+
+**Setup (needs Python 3.8+):**
+```bash
+pip install -r requirements.txt
+python app.py
+```
+Then keep the Node site running too (`npm start`), open <http://localhost:3000>, and click
+the **Trend Finder** tab. Both servers must be running for the feature to work.
+
+**Dated reports.** Every result set shows the capture date ("Captured YYYY-MM-DD"), and two
+buttons let you save a dated report for reproducibility: **Export CSV** (a date-stamped
+`ebay-trends-<topic>-<date>.csv` with rank, product, source, image, listing URL, topic, and
+capture date) and **Print report** (a clean dated report page you can print or Save-as-PDF).
+
+**API:** `GET http://localhost:5000/api/trends?q=<topic>` →
+```json
+{ "query": "mechanical keyboard", "captured": "2026-06-15",
+  "results": [ { "rank": 1, "name": "...", "image": "https://...", "source": "eBay", "link": "https://..." } ] }
+```
+`GET /api/health` → `{ "ok": true }`. The eBay-specific scraping lives in `search_ebay()` in
+`app.py`; if eBay changes its page markup, the CSS selectors there are the only thing to update.
+
+## Trend Finder Upgrade
+
+A research tool reachable from the **Trend Finder Upgrade** tab. Search a topic to get the
+**top 5 trending articles** (from Google News, Reddit, and Hacker News), then use **Gemini
+Flash** to read each article and pull out its real ranked list of products/ideas — ignoring
+nav menus, ads, and sidebars. Pick the ideas you want and **export them to CSV** for research.
+
+> Gemini is used here for **text analysis only** — reading and summarising article text. It is
+> never used for image generation. Your key stays server-side (in Flask) and never reaches the browser.
+
+It runs as **two new servers** (separate from the moodboard/eBay tools):
+- **Node** `serve.mjs` on **:3002** — serves the page and proxies thumbnail images.
+- **Flask** `server.py` on **:5001** — article search + Gemini extraction.
+
+**Setup (Python 3.8+ and Node 18+):**
+```bash
+pip install -r requirements.txt
+```
+Add your free Gemini key (from <https://aistudio.google.com/apikey>) to `.env`:
+```
+GEMINI_API_KEY=your-real-key
+# GEMINI_MODEL=gemini-2.5-flash   # optional override (default)
+```
+Run both servers (two terminals):
+```bash
+python server.py        # API on :5001
+npm run serve:research  # page on :3002  (or: node serve.mjs)
+```
+Open <http://localhost:3002/trend-finder-upgrade.html>.
+
+**Using it**
+1. Search a topic → up to 5 article cards (rank, title, source, thumbnail).
+2. **Extract Ideas** adds the article's content to the right-hand Idea Panel; **Browse &
+   Pick** opens a checklist so you choose which items to keep first.
+3. Tick/untick items in the panel, then **Preview** (table) or **Export CSV**.
+4. **Google News links** can't be followed by a server — the card shows a yellow box: click
+   **Open article ↗**, let it redirect, copy the real URL, paste it in the box, press Enter.
+
+**What it extracts.** Gemini reads each article and returns its meaningful content — *both* the
+**products/tools** it recommends *and* the article's **main ideas/takeaways** — with each item
+**labeled by type** (green `Product` / accent `Idea` badge). It works on essays too, not just
+listicles. The HTML fallback labels everything `Idea` (heuristics can't classify reliably).
+
+**Dated CSV.** Export downloads `trend-ideas-<date>.csv` with columns
+`Rank, Type, Idea/Product, Article Title, Source, URL, Date Captured` (UTF-8 BOM → opens cleanly
+in Excel/Sheets). The capture date is shown in the panel, Browse & Pick, and Preview.
+
+**Endpoints:** `GET /api/trending?q=<topic>` → `{captured,results:[{rank,title,link,source,thumbnail}]}` ·
+`GET /api/extract?url=<article>` → `{title,url,captured,items:[{rank,text,type}],method}` (or
+`{needs_manual:true,open_url}`) · `GET /api/health`. Without a Gemini key, extraction falls
+back to HTML heuristics (`method:"fallback"`) instead of failing.
 
 ## Cost
 
