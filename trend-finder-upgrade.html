@@ -203,8 +203,8 @@
 </header>
 
 <nav class="nav">
-  <a class="nav-link" href="http://localhost:3000/">Moodboard Studio</a>
-  <a class="nav-link" href="http://localhost:3000/trend-finder.html">Trend Finder</a>
+  <a class="nav-link" href="/">Moodboard Studio</a>
+  <a class="nav-link" href="/trend-finder.html">Trend Finder</a>
   <a class="nav-link active" href="/trend-finder-upgrade.html">Trend Finder Upgrade</a>
 </nav>
 
@@ -267,13 +267,16 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/auth.js"></script>
 <script>
 (function () {
   "use strict";
 
-  const TREND_API = "http://localhost:5001"; // Flask backend
-  // Images are proxied by this same Node server (serve.mjs) to dodge hotlink/CORS.
-  const imgProxy = (u) => "/img?url=" + encodeURIComponent(u);
+  // Same-origin in production: the research API is serverless at /api/trending
+  // and /api/extract. (Locally, point this at "http://localhost:5001" for server.py.)
+  const TREND_API = "";
+  // Images are proxied by the /api/img serverless function to dodge hotlink/CORS.
+  const imgProxy = (u) => "/api/img?url=" + encodeURIComponent(u);
 
   const $ = (id) => document.getElementById(id);
   const topicInput = $("topic"), searchBtn = $("searchBtn"), statusEl = $("status"),
@@ -306,7 +309,7 @@
     setStatus('<span class="live">●</span> Searching Google News, Reddit, Hacker News…');
     resultsEl.innerHTML = '<div class="empty"><div class="spinner"></div><span class="mono">Searching</span>Finding trending articles…</div>';
     try {
-      const res = await fetch(TREND_API + "/api/trending?q=" + encodeURIComponent(topic));
+      const res = await authFetch(TREND_API + "/api/trending?q=" + encodeURIComponent(topic));
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { showErr(resultsEl, data.error || ("Request failed (" + res.status + ").")); setStatus("Error."); return; }
       articles = data.results || [];
@@ -357,7 +360,7 @@
 
   // ----------------------- extract (shared call) -----------------------
   async function callExtract(url) {
-    const res = await fetch(TREND_API + "/api/extract?url=" + encodeURIComponent(url));
+    const res = await authFetch(TREND_API + "/api/extract?url=" + encodeURIComponent(url));
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || ("Extract failed (" + res.status + ")."));
     return data;

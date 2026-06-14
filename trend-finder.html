@@ -229,7 +229,7 @@
 <nav class="nav">
   <a class="nav-link" href="/">Moodboard Studio</a>
   <a class="nav-link active" href="/trend-finder.html">Trend Finder</a>
-  <a class="nav-link" href="http://localhost:3002/trend-finder-upgrade.html">Trend Finder Upgrade</a>
+  <a class="nav-link" href="/trend-finder-upgrade.html">Trend Finder Upgrade</a>
 </nav>
 
 <div class="wrap">
@@ -266,13 +266,14 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/auth.js"></script>
 <script>
 (function () {
   "use strict";
 
-  // The Flask trend API runs separately from this page (Node serves the page on
-  // :3000; Flask serves the data on :5000). CORS is enabled server-side.
-  const API_BASE = "http://localhost:5000";
+  // Same-origin in production: the trend API is a serverless function at
+  // /api/trends. (Locally, point this at "http://localhost:5000" if running app.py.)
+  const API_BASE = "";
 
   const topicInput = document.getElementById("topic");
   const findBtn = document.getElementById("findBtn");
@@ -362,7 +363,7 @@
     showLoading(topic);
 
     try {
-      const res = await fetch(API_BASE + "/api/trends?q=" + encodeURIComponent(topic));
+      const res = await authFetch(API_BASE + "/api/trends?q=" + encodeURIComponent(topic));
       let data = {};
       try { data = await res.json(); } catch (_) { /* non-JSON error body */ }
 

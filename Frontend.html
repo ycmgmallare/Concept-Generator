@@ -259,7 +259,7 @@
 <nav class="nav">
   <a class="nav-link active" href="/">Moodboard Studio</a>
   <a class="nav-link" href="/trend-finder.html">Trend Finder</a>
-  <a class="nav-link" href="http://localhost:3002/trend-finder-upgrade.html">Trend Finder Upgrade</a>
+  <a class="nav-link" href="/trend-finder-upgrade.html">Trend Finder Upgrade</a>
 </nav>
 
 <div class="wrap">
@@ -307,6 +307,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/auth.js"></script>
 <script>
 (function () {
   "use strict";
@@ -497,7 +498,7 @@
     save(); refreshFrame(concept, side);
 
     try {
-      const res = await fetch("/api/generate/image", {
+      const res = await authFetch("/api/generate/image", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: promptText, aspect_ratio: concept.aspectRatio || "16:9" }),
       });
@@ -507,7 +508,7 @@
       // Poll until the task finishes (~ up to 3 min).
       for (let i = 0; i < 45; i++) {
         await sleep(4000);
-        const sres = await fetch("/api/task/image?taskId=" + encodeURIComponent(data.taskId));
+        const sres = await authFetch("/api/task/image?taskId=" + encodeURIComponent(data.taskId));
         const sdata = await sres.json();
         if (sdata.state === "success" && sdata.urls && sdata.urls.length) {
           concept[side + "ImageUrl"] = sdata.urls[0];
@@ -550,7 +551,7 @@
 
     let concepts;
     try {
-      const res = await fetch("/api/concepts", {
+      const res = await authFetch("/api/concepts", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inputs),
       });
