@@ -22,7 +22,7 @@ generated with **Kie AI** (Nano Banana).
 | `local/server.py` | **Python/Flask** backend (local dev, port 5001): article search + Gemini idea extraction. Deployed copy lives in `api/trending.py` + `api/extract.py`. |
 | `serve.mjs` | **Node** front-end server (port 3002): serves the upgrade page + proxies images. |
 | `requirements.txt` | Python deps for the **deployed** Vercel functions (`requests`, `beautifulsoup4`, `feedparser` — no Flask). |
-| `local/requirements.txt` | Python deps for **local dev** (adds `flask`, `flask-cors` for `local/app.py` + `local/server.py`). |
+| `local/requirements-dev.txt` | Python deps for **local dev** (adds `flask`, `flask-cors` for `local/app.py` + `local/server.py`). |
 
 ## Setup
 
@@ -68,7 +68,7 @@ The pages are still served by Node; Flask only serves the trend data.
 
 **Setup (needs Python 3.8+):**
 ```bash
-pip install -r local/requirements.txt
+pip install -r local/requirements-dev.txt
 python local/app.py
 ```
 Then keep the Node site running too (`npm start`), open <http://localhost:3000>, and click
@@ -103,7 +103,7 @@ It runs as **two new servers** (separate from the moodboard/eBay tools):
 
 **Setup (Python 3.8+ and Node 18+):**
 ```bash
-pip install -r local/requirements.txt
+pip install -r local/requirements-dev.txt
 ```
 Add your free Gemini key (from <https://aistudio.google.com/apikey>) to `.env`:
 ```
