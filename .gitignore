@@ -6,3 +6,7 @@ credentials.txt
 # Session write-ups (local notes, not part of the project)
 Session000_VercelDeployment.pdf
 make_session_pdf.py
+
+# Python bytecode
+__pycache__/
+*.pyc
