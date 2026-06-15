@@ -60,11 +60,17 @@ Default image aspect ratio is `16:9` (set via `DEFAULT_ASPECT_RATIO`).
 
 A second feature, reachable from the **Trend Finder** tab in the top navigation. Type any
 topic and it pulls the **top 5 trending products** for it — name, image, source/store, and a
-button straight to the listing — scraped **live** from eBay. No API key, and no fake/sample
+button straight to the listing — live from **eBay's official Browse API**. No fake/sample
 data: if nothing is found, you get a clean "no results" state.
 
-It runs as a **separate Python/Flask API** (port 5000) alongside the Node site (port 3000).
-The pages are still served by Node; Flask only serves the trend data.
+> Uses the eBay Browse API (not HTML scraping) so it works from cloud hosts like Vercel,
+> which eBay blocks for scraping. Create a free Production keyset at
+> <https://developer.ebay.com> and set `EBAY_CLIENT_ID` (App ID) and `EBAY_CLIENT_SECRET`
+> (Cert ID) — in `.env` for local dev, and in the Vercel project's Environment Variables for
+> the live site.
+
+Locally it runs as a **separate Python/Flask API** (port 5000) alongside the Node site
+(port 3000). The pages are still served by Node; Flask only serves the trend data.
 
 **Setup (needs Python 3.8+):**
 ```bash
@@ -84,8 +90,8 @@ capture date) and **Print report** (a clean dated report page you can print or S
 { "query": "mechanical keyboard", "captured": "2026-06-15",
   "results": [ { "rank": 1, "name": "...", "image": "https://...", "source": "eBay", "link": "https://..." } ] }
 ```
-`GET /api/health` → `{ "ok": true }`. The eBay-specific scraping lives in `search_ebay()` in
-`local/app.py` (and the deployed copy `api/trends.py`); if eBay changes its page markup, the CSS selectors there are the only thing to update.
+`GET /api/health` → `{ "ok": true, "ebay": true }`. The eBay Browse API call lives in
+`search_ebay()` in `local/app.py` (and the deployed copy `api/trends.py`).
 
 ## Trend Finder Upgrade
 
