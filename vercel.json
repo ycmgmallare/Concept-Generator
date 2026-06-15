@@ -1,7 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/Frontend.html" }
-  ],
   "functions": {
     "api/trends.py": { "runtime": "@vercel/python@6.45.0", "maxDuration": 60 },
     "api/trending.py": { "runtime": "@vercel/python@6.45.0", "maxDuration": 60 },

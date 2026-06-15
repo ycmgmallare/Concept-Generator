@@ -26,10 +26,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
-app.use(express.static(__dirname)); // serves Frontend.html and assets
+app.use(express.static(__dirname)); // serves index.html and assets
 
 // Open the app at the root.
-app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "Frontend.html")));
+app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
 const KIE_BASE = "https://api.kie.ai/api/v1";
 
