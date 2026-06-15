@@ -2,19 +2,20 @@
 # api/trending.py — Vercel Python serverless function (GET /api/trending?q=)
 #
 # Searches Google News RSS + Reddit RSS + Hacker News and returns the top 5
-# trending ARTICLES for the query. Ported from server.py. Vercel serves the
-# WSGI `app` below.
+# trending ARTICLES for the query. Uses Vercel's native BaseHTTPRequestHandler
+# pattern (NOT Flask) — see api/trends.py for why.
 # ===========================================================================
 
+import itertools
+import json
 import re
+import time
 from datetime import date
-from urllib.parse import quote_plus
+from http.server import BaseHTTPRequestHandler
+from urllib.parse import quote_plus, urlparse, parse_qs
 
 import feedparser
 import requests
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -64,7 +65,7 @@ def search_reddit(query, attempts=3):
             if feed.entries:
                 break
         if attempt < attempts - 1:
-            __import__("time").sleep(2)
+            time.sleep(2)
 
     if not feed:
         return out
@@ -123,7 +124,7 @@ def search_google_news(query):
 def merge_top(sources, limit=MAX_RESULTS):
     """Round-robin interleave results from each source, dedupe by title."""
     merged, seen = [], set()
-    for items in __import__("itertools").zip_longest(*sources):
+    for items in itertools.zip_longest(*sources):
         for item in items:
             if not item:
                 continue
@@ -137,19 +138,29 @@ def merge_top(sources, limit=MAX_RESULTS):
     return merged
 
 
-@app.get("/api/trending")
-@app.get("/")
-def trending():
-    query = (request.args.get("q") or "").strip()
-    if not query:
-        return jsonify(error="Please provide a search topic via ?q="), 400
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        params = parse_qs(urlparse(self.path).query)
+        query = (params.get("q", [""])[0] or "").strip()
 
-    sources = [
-        search_google_news(query),
-        search_reddit(query),
-        search_hacker_news(query),
-    ]
-    results = merge_top(sources)
-    for i, item in enumerate(results, start=1):
-        item["rank"] = i
-    return jsonify(query=query, results=results, captured=date.today().isoformat())
+        if not query:
+            return self._json(400, {"error": "Please provide a search topic via ?q="})
+
+        sources = [
+            search_google_news(query),
+            search_reddit(query),
+            search_hacker_news(query),
+        ]
+        results = merge_top(sources)
+        for i, item in enumerate(results, start=1):
+            item["rank"] = i
+
+        self._json(200, {"query": query, "results": results, "captured": date.today().isoformat()})
+
+    def _json(self, code, obj):
+        body = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)

@@ -2,22 +2,23 @@
 # api/trends.py — Vercel Python serverless function (GET /api/trends?q=<topic>)
 #
 # Scrapes eBay's live search results for a topic and returns the Top 5 products.
-# Ported from app.py. Vercel serves the WSGI `app` below.
+# Uses Vercel's native BaseHTTPRequestHandler pattern (NOT Flask) so the project
+# stays in "individual /api functions" mode — having Flask as a dependency would
+# force Vercel into single-Flask-app framework mode and break the deploy.
 #
 # NOTE: eBay blocks datacenter IPs (Vercel) more aggressively than home IPs, so
 # this may hit the "Pardon Our Interruption" challenge more often in production.
 # No fake/sample data is ever returned: if eBay yields nothing, results is [].
 # ===========================================================================
 
+import json
 import time
 from datetime import date
-from urllib.parse import quote_plus
+from http.server import BaseHTTPRequestHandler
+from urllib.parse import quote_plus, urlparse, parse_qs
 
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
 
 HEADERS = {
     "User-Agent": (
@@ -140,16 +141,25 @@ def search_ebay(query):
     return results
 
 
-@app.get("/api/trends")
-@app.get("/")
-def trends():
-    query = (request.args.get("q") or "").strip()
-    if not query:
-        return jsonify(error="Please provide a search topic via ?q="), 400
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        params = parse_qs(urlparse(self.path).query)
+        query = (params.get("q", [""])[0] or "").strip()
 
-    try:
-        results = search_ebay(query)
-    except requests.RequestException as exc:
-        return jsonify(error=f"Could not reach eBay: {exc}"), 502
+        if not query:
+            return self._json(400, {"error": "Please provide a search topic via ?q="})
 
-    return jsonify(query=query, results=results, captured=date.today().isoformat())
+        try:
+            results = search_ebay(query)
+        except requests.RequestException as exc:
+            return self._json(502, {"error": f"Could not reach eBay: {exc}"})
+
+        self._json(200, {"query": query, "results": results, "captured": date.today().isoformat()})
+
+    def _json(self, code, obj):
+        body = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)

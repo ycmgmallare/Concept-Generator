@@ -1,0 +1,9 @@
+# Dependencies for LOCAL development only (local/app.py, local/server.py).
+# The deployed Vercel functions in /api use the native handler pattern and do
+# NOT use Flask — the root requirements.txt deliberately omits Flask so Vercel
+# does not switch into single-Flask-app framework mode.
+flask
+flask-cors
+requests
+beautifulsoup4
+feedparser

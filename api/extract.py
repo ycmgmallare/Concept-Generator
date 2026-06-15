@@ -3,8 +3,8 @@
 #
 # Fetches one article, pulls clean text, and asks Gemini Flash to return the
 # article's ranked list of products/ideas (ignoring nav/ads). Falls back to HTML
-# heuristics if Gemini is unavailable. Ported from server.py. Vercel serves the
-# WSGI `app` below.
+# heuristics if Gemini is unavailable. Uses Vercel's native
+# BaseHTTPRequestHandler pattern (NOT Flask) — see api/trends.py for why.
 #
 # Gemini is used for TEXT ANALYSIS ONLY. The key lives in the GEMINI_API_KEY env
 # var (set in Vercel) and never reaches the browser.
@@ -14,13 +14,11 @@ import json
 import os
 import re
 from datetime import date
-from urllib.parse import urlparse
+from http.server import BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
 
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
 
 GEMINI_API_KEY = (os.environ.get("GEMINI_API_KEY") or "").strip()
 GEMINI_MODEL = (os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash").strip()
@@ -134,33 +132,31 @@ def extract_with_html(text, soup_html):
     return [{"rank": i, "text": t, "type": "idea"} for i, t in enumerate(best[:25], start=1)]
 
 
-@app.get("/api/extract")
-@app.get("/")
-def extract():
-    url = (request.args.get("url") or "").strip()
-    if not url:
-        return jsonify(error="Please provide an article URL via ?url="), 400
-
+def do_extract(url):
+    """Run the full extract pipeline for `url`. Returns (status_code, dict)."""
     host = urlparse(url).netloc.lower()
     if any(h in host for h in GOOGLE_HOSTS) or "/url?" in url:
-        return jsonify(
-            needs_manual=True,
-            open_url=url,
-            reason="This is a Google News link. Open it in your browser, let it redirect to the "
+        return 200, {
+            "needs_manual": True,
+            "open_url": url,
+            "reason": "This is a Google News link. Open it in your browser, let it redirect to the "
             "real article, then paste that URL back here.",
-        )
+        }
 
     try:
         resp_html = requests.get(url, headers=BROWSER_HEADERS, timeout=15, allow_redirects=True)
         resp_html.raise_for_status()
         final_host = urlparse(resp_html.url).netloc.lower()
         if any(h in final_host for h in GOOGLE_HOSTS):
-            return jsonify(needs_manual=True, open_url=url,
-                           reason="The link redirected to a Google page. Open it in your browser "
-                                  "and paste the final article URL.")
+            return 200, {
+                "needs_manual": True,
+                "open_url": url,
+                "reason": "The link redirected to a Google page. Open it in your browser "
+                "and paste the final article URL.",
+            }
         html = resp_html.text
     except requests.RequestException as exc:
-        return jsonify(error=f"Could not fetch the article: {exc}"), 502
+        return 502, {"error": f"Could not fetch the article: {exc}"}
 
     soup = BeautifulSoup(html, "html.parser")
     title = (soup.title.string.strip() if soup.title and soup.title.string else None)
@@ -183,13 +179,37 @@ def extract():
         if items:
             method = "gemini"
     except _RateLimited:
-        return jsonify(
-            error="Gemini rate limit reached (free tier). Wait a minute and try again.",
-        ), 429
+        return 429, {"error": "Gemini rate limit reached (free tier). Wait a minute and try again."}
 
     if not items:
         items = extract_with_html(text, html)
         method = "fallback"
 
-    return jsonify(title=title, url=resp_html.url, items=items, thumbnail=thumbnail,
-                   method=method, captured=date.today().isoformat())
+    return 200, {
+        "title": title,
+        "url": resp_html.url,
+        "items": items,
+        "thumbnail": thumbnail,
+        "method": method,
+        "captured": date.today().isoformat(),
+    }
+
+
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        params = parse_qs(urlparse(self.path).query)
+        url = (params.get("url", [""])[0] or "").strip()
+
+        if not url:
+            return self._json(400, {"error": "Please provide an article URL via ?url="})
+
+        code, payload = do_extract(url)
+        self._json(code, payload)
+
+    def _json(self, code, obj):
+        body = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
