@@ -1,0 +1,5 @@
+{
+  "redirects": [
+    { "source": "/trend-finder.html", "destination": "/", "permanent": false }
+  ]
+}
