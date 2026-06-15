@@ -17,9 +17,9 @@ generated with **Kie AI** (Nano Banana).
 | `.env` | Holds your `KIE_AI_API_KEY` (you fill this in). |
 | `package.json` | Node dependencies (`express`, `cors`, `dotenv`). |
 | `trend-finder.html` | The **Trend Finder** UI — search a topic, see the top 5 trending products. |
-| `app.py` | **Python/Flask** backend for Trend Finder: scrapes live eBay results. |
+| `local/app.py` | **Python/Flask** backend for Trend Finder (local dev): scrapes live eBay results. Deployed copy lives in `api/trends.py`. |
 | `trend-finder-upgrade.html` | The **Trend Finder Upgrade** UI — article research, idea picking, CSV export. |
-| `server.py` | **Python/Flask** backend (port 5001): article search + Gemini idea extraction. |
+| `local/server.py` | **Python/Flask** backend (local dev, port 5001): article search + Gemini idea extraction. Deployed copy lives in `api/trending.py` + `api/extract.py`. |
 | `serve.mjs` | **Node** front-end server (port 3002): serves the upgrade page + proxies images. |
 | `requirements.txt` | Python dependencies (`flask`, `flask-cors`, `requests`, `beautifulsoup4`, `feedparser`). |
 
@@ -68,7 +68,7 @@ The pages are still served by Node; Flask only serves the trend data.
 **Setup (needs Python 3.8+):**
 ```bash
 pip install -r requirements.txt
-python app.py
+python local/app.py
 ```
 Then keep the Node site running too (`npm start`), open <http://localhost:3000>, and click
 the **Trend Finder** tab. Both servers must be running for the feature to work.
@@ -84,7 +84,7 @@ capture date) and **Print report** (a clean dated report page you can print or S
   "results": [ { "rank": 1, "name": "...", "image": "https://...", "source": "eBay", "link": "https://..." } ] }
 ```
 `GET /api/health` → `{ "ok": true }`. The eBay-specific scraping lives in `search_ebay()` in
-`app.py`; if eBay changes its page markup, the CSS selectors there are the only thing to update.
+`local/app.py` (and the deployed copy `api/trends.py`); if eBay changes its page markup, the CSS selectors there are the only thing to update.
 
 ## Trend Finder Upgrade
 
@@ -98,7 +98,7 @@ nav menus, ads, and sidebars. Pick the ideas you want and **export them to CSV**
 
 It runs as **two new servers** (separate from the moodboard/eBay tools):
 - **Node** `serve.mjs` on **:3002** — serves the page and proxies thumbnail images.
-- **Flask** `server.py` on **:5001** — article search + Gemini extraction.
+- **Flask** `local/server.py` on **:5001** — article search + Gemini extraction.
 
 **Setup (Python 3.8+ and Node 18+):**
 ```bash
@@ -111,7 +111,7 @@ GEMINI_API_KEY=your-real-key
 ```
 Run both servers (two terminals):
 ```bash
-python server.py        # API on :5001
+python local/server.py  # API on :5001
 npm run serve:research  # page on :3002  (or: node serve.mjs)
 ```
 Open <http://localhost:3002/trend-finder-upgrade.html>.
