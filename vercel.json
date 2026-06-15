@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/trends.py": { "maxDuration": 60 },
-    "api/trending.py": { "maxDuration": 60 },
-    "api/extract.py": { "maxDuration": 60 }
-  }
-}
