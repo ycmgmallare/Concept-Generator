@@ -1,109 +1,172 @@
 # ===========================================================================
-# local/app.py — Trend Finder backend (Flask, local dev only — port 5000)
+# local/app.py — Trend Finder backend (Flask, LOCAL DEV ONLY — port 5000)
 #
-# Returns the Top 5 eBay products for a topic via eBay's official Browse API.
-# The DEPLOYED copy is api/trends.py (Vercel native handler); this Flask version
-# mirrors it for local development so behavior matches production.
+# Scrapes eBay's live search results (GET /api/trends?q=<topic>) for the Top 5
+# products: name, image, source, link. Works locally from a home IP, no API key.
 #
-# Auth: OAuth 2.0 client-credentials. Set EBAY_CLIENT_ID (App ID) and
-# EBAY_CLIENT_SECRET (Cert ID) in .env — get them at https://developer.ebay.com.
-# No fake/sample data: if eBay yields nothing, results is an empty list.
+# NOTE: the DEPLOYED copy is api/trends.py, which uses eBay's official Browse API
+# instead — because Vercel's datacenter IPs are blocked for scraping (503). This
+# local scraper is intentionally kept for offline/local testing without keys.
+#
+# Runs SEPARATELY from the Node site (server.js, :3000), which serves the HTML
+# pages; this Flask app only serves trend data on :5000, with CORS enabled so the
+# page on :3000 can fetch across origins. No fake/sample data: empty list if none.
 # ===========================================================================
 
-import base64
-import os
 import time
 from datetime import date
 from urllib.parse import quote_plus
 
 import requests
-from dotenv import load_dotenv
+from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-
-load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # allow the page served from http://localhost:3000 to call this API
 
-EBAY_CLIENT_ID = (os.environ.get("EBAY_CLIENT_ID") or "").strip()
-EBAY_CLIENT_SECRET = (os.environ.get("EBAY_CLIENT_SECRET") or "").strip()
+# eBay blocks bare requests (returns 403); it needs a full browser-like header
+# set AND session cookies from a prior page view. We grab cookies by visiting
+# the homepage once, then hit the search page (see search_ebay()).
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
 
-TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token"
-SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
-MARKETPLACE = "EBAY_US"
 MAX_RESULTS = 5
 
-_token_cache = {"value": None, "expires_at": 0.0}
+
+def _first_attr(tag, *attrs):
+    """Return the first non-empty attribute value among *attrs on tag."""
+    if not tag:
+        return None
+    for attr in attrs:
+        value = tag.get(attr)
+        if value and value.strip():
+            return value.strip()
+    return None
 
 
-def has_keys():
-    return bool(EBAY_CLIENT_ID) and bool(EBAY_CLIENT_SECRET)
+def _itm_id(link):
+    """Extract the eBay item id from a listing URL (for de-duping carousels)."""
+    if not link:
+        return None
+    marker = "/itm/"
+    if marker not in link:
+        return None
+    tail = link.split(marker, 1)[1]
+    digits = ""
+    for ch in tail:
+        if ch.isdigit():
+            digits += ch
+        else:
+            break
+    return digits or None
 
 
-def get_token():
-    """Return a cached or fresh eBay application access token (client credentials)."""
-    now = time.time()
-    if _token_cache["value"] and now < _token_cache["expires_at"]:
-        return _token_cache["value"]
+def _clean_title(text):
+    """Drop eBay's appended accessibility label from a card title."""
+    suffix = "Opens in a new window or tab"
+    if text.endswith(suffix):
+        text = text[: -len(suffix)].strip()
+    return text
 
-    basic = base64.b64encode(
-        f"{EBAY_CLIENT_ID}:{EBAY_CLIENT_SECRET}".encode("utf-8")
-    ).decode("ascii")
-    resp = requests.post(
-        TOKEN_URL,
-        headers={
-            "Authorization": f"Basic {basic}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={
-            "grant_type": "client_credentials",
-            "scope": "https://api.ebay.com/oauth/api_scope",
-        },
-        timeout=15,
+
+def _fetch_results_html(query, attempts=3):
+    """Fetch the eBay results page, retrying past the 'Pardon Our
+    Interruption' anti-bot challenge that eBay serves intermittently.
+
+    Returns the HTML of a real results page. Raises requests.RequestException
+    if eBay keeps challenging us after `attempts` tries.
+    """
+    search_url = (
+        "https://www.ebay.com/sch/i.html"
+        f"?_nkw={quote_plus(query)}&_sop=12"  # _sop=12 = Best Match (trending-ish)
     )
-    resp.raise_for_status()
-    data = resp.json()
-    token = data["access_token"]
-    _token_cache["value"] = token
-    _token_cache["expires_at"] = now + int(data.get("expires_in", 7200)) - 60
-    return token
+
+    session = requests.Session()
+    session.headers.update(HEADERS)
+    # Warm up: collect anti-bot cookies from the homepage, else search 403s.
+    session.get("https://www.ebay.com/", timeout=15)
+
+    for attempt in range(attempts):
+        resp = session.get(search_url, timeout=15)
+        resp.raise_for_status()
+        # The challenge page is small and titled "Pardon Our Interruption".
+        if "Pardon Our Interruption" not in resp.text:
+            return resp.text
+        if attempt < attempts - 1:
+            time.sleep(2)
+
+    raise requests.RequestException(
+        "eBay is temporarily blocking automated requests (anti-bot challenge). "
+        "Please try again in a moment."
+    )
 
 
 def search_ebay(query):
-    """Search eBay's Browse API for `query` and return up to 5 products as
-    {name, image, source, link}. Returns [] when nothing is found."""
-    token = get_token()
-    resp = requests.get(
-        f"{SEARCH_URL}?q={quote_plus(query)}&limit={MAX_RESULTS}",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE,
-        },
-        timeout=15,
-    )
-    resp.raise_for_status()
-    data = resp.json()
+    """Scrape eBay's search results for `query` and return up to 5 products.
 
+    Each item is a dict: {name, image, source, link}. Selectors are isolated
+    here so they're easy to update if eBay changes its markup. Returns [] when
+    nothing usable is found — never fabricated data.
+
+    eBay's current results use `.s-card` items (title `.s-card__title`, a real
+    listing link containing `/itm/<id>`, image from i.ebayimg.com). The first
+    "Shop on eBay" card and any placeholder image (ir.ebaystatic.com) are
+    skipped.
+    """
+    html = _fetch_results_html(query)
+
+    soup = BeautifulSoup(html, "html.parser")
     results = []
-    for item in (data.get("itemSummaries") or [])[:MAX_RESULTS]:
-        name = item.get("title")
-        link = item.get("itemWebUrl")
-        if not name or not link:
+    seen = set()
+
+    for card in soup.select(".s-card"):
+        title_el = card.select_one(".s-card__title")
+        name = _clean_title(title_el.get_text(" ", strip=True)) if title_el else None
+
+        link_el = card.select_one("a[href*='/itm/']")
+        link = link_el.get("href") if link_el else None
+
+        # Skip the leading "Shop on eBay" placeholder and any broken row.
+        if not name or not link or name.lower() == "shop on ebay":
             continue
-        image = (item.get("image") or {}).get("imageUrl")
-        if not image:
-            thumbs = item.get("thumbnailImages") or []
-            if thumbs:
-                image = thumbs[0].get("imageUrl")
-        results.append({"name": name, "image": image, "source": "eBay", "link": link})
+
+        item_id = _itm_id(link)
+        dedupe_key = item_id or link
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+
+        img_el = card.select_one("img")
+        image = _first_attr(img_el, "src", "data-src")
+        # eBay uses a static placeholder graphic for lazy/empty images.
+        if image and "ebaystatic.com" in image:
+            image = None
+
+        results.append(
+            {"name": name, "image": image, "source": "eBay", "link": link}
+        )
+
+        if len(results) >= MAX_RESULTS:
+            break
 
     return results
 
 
 @app.get("/api/health")
 def health():
-    return jsonify(ok=True, ebay=has_keys())
+    return jsonify(ok=True)
 
 
 @app.get("/api/trends")
@@ -112,30 +175,16 @@ def trends():
     if not query:
         return jsonify(error="Please provide a search topic via ?q="), 400
 
-    if not has_keys():
-        return jsonify(
-            error="eBay API keys are not set. Add EBAY_CLIENT_ID and "
-                  "EBAY_CLIENT_SECRET (from developer.ebay.com) to .env and restart."
-        ), 503
-
     try:
         results = search_ebay(query)
-    except requests.HTTPError as exc:
-        status = exc.response.status_code if exc.response is not None else 502
-        detail = ""
-        try:
-            detail = exc.response.json().get("errors", [{}])[0].get("message", "")
-        except Exception:
-            detail = exc.response.text[:200] if exc.response is not None else ""
-        return jsonify(error=f"eBay API error ({status}): {detail or exc}"), 502
     except requests.RequestException as exc:
-        return jsonify(error=f"Could not reach eBay API: {exc}"), 502
+        # Network / HTTP failure talking to eBay — surface honestly.
+        return jsonify(error=f"Could not reach eBay: {exc}"), 502
 
     return jsonify(query=query, results=results, captured=date.today().isoformat())
 
 
 if __name__ == "__main__":
     print("\n  Trend Finder API running at http://localhost:5000")
-    print(f"  eBay API keys: {'set' if has_keys() else 'NOT set — add them to .env'}")
     print("  Try: http://localhost:5000/api/trends?q=mechanical+keyboard\n")
     app.run(port=5000, debug=True)

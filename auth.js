@@ -98,19 +98,35 @@
     return loginPromise;
   }
 
-  // Drop-in fetch replacement for guarded /api/* calls.
+  // Drop-in fetch replacement for guarded /api/* calls. Only prompts for a login
+  // on a real 401 — so locally (Flask servers don't gate) no popup ever appears,
+  // while production's middleware returns 401 → popup → retry.
   async function authFetch(url, opts) {
     opts = opts || {};
-    var cred = getCred();
-    if (!cred) cred = await promptLogin("");
     for (var attempt = 0; attempt < 5; attempt++) {
-      var headers = Object.assign({}, opts.headers || {}, { Authorization: "Basic " + cred });
+      var cred = getCred();
+      var headers = Object.assign({}, opts.headers || {});
+      if (cred) headers.Authorization = "Basic " + cred;
       var res = await fetch(url, Object.assign({}, opts, { headers: headers }));
       if (res.status !== 401) return res;
       clearCred();
-      cred = await promptLogin("Incorrect username or password. Try again.");
+      await promptLogin(attempt === 0 ? "" : "Incorrect username or password. Try again.");
     }
     throw new Error("Authentication failed.");
+  }
+
+  // Environment flag + reveal of local-only UI (e.g. the Trend Finder nav link).
+  window.IS_LOCAL = ["localhost", "127.0.0.1"].indexOf(location.hostname) !== -1;
+  if (window.IS_LOCAL) {
+    var reveal = function () {
+      var els = document.querySelectorAll("[data-local-only]");
+      for (var i = 0; i < els.length; i++) els[i].removeAttribute("style");
+    };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", reveal);
+    } else {
+      reveal();
+    }
   }
 
   window.authFetch = authFetch;

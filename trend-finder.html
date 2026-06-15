@@ -271,9 +271,9 @@
 (function () {
   "use strict";
 
-  // Same-origin in production: the trend API is a serverless function at
-  // /api/trends. (Locally, point this at "http://localhost:5000" if running app.py.)
-  const API_BASE = "";
+  // Production: same-origin serverless function (/api/trends). Local: the Flask
+  // server on :5000 (python local/app.py). window.IS_LOCAL is set by auth.js.
+  const API_BASE = window.IS_LOCAL ? "http://localhost:5000" : "";
 
   const topicInput = document.getElementById("topic");
   const findBtn = document.getElementById("findBtn");

@@ -204,9 +204,8 @@
 
 <nav class="nav">
   <a class="nav-link" href="/">Moodboard Studio</a>
-  <!-- Trend Finder hidden until eBay API keys are added (EBAY_CLIENT_ID/SECRET). To re-enable: uncomment this line.
-  <a class="nav-link" href="/trend-finder.html">Trend Finder</a>
-  -->
+  <!-- Trend Finder: shown only on localhost (auth.js reveals [data-local-only]); hidden on the live site until eBay keys are added. -->
+  <a class="nav-link" href="/trend-finder.html" data-local-only style="display:none">Trend Finder</a>
   <a class="nav-link active" href="/trend-finder-upgrade.html">Trend Finder Upgrade</a>
 </nav>
 
@@ -274,9 +273,9 @@
 (function () {
   "use strict";
 
-  // Same-origin in production: the research API is serverless at /api/trending
-  // and /api/extract. (Locally, point this at "http://localhost:5001" for server.py.)
-  const TREND_API = "";
+  // Production: same-origin serverless (/api/trending, /api/extract). Local: the
+  // Flask server on :5001 (python local/server.py). window.IS_LOCAL set by auth.js.
+  const TREND_API = window.IS_LOCAL ? "http://localhost:5001" : "";
   // Images are proxied by the /api/img serverless function to dodge hotlink/CORS.
   const imgProxy = (u) => "/api/img?url=" + encodeURIComponent(u);
 

@@ -103,9 +103,9 @@ nav menus, ads, and sidebars. Pick the ideas you want and **export them to CSV**
 > Gemini is used here for **text analysis only** — reading and summarising article text. It is
 > never used for image generation. Your key stays server-side (in Flask) and never reaches the browser.
 
-It runs as **two new servers** (separate from the moodboard/eBay tools):
-- **Node** `serve.mjs` on **:3002** — serves the page and proxies thumbnail images.
-- **Flask** `local/server.py` on **:5001** — article search + Gemini extraction.
+Locally it's backed by **Flask** `local/server.py` on **:5001** (article search +
+Gemini extraction). The page itself is served by `server.js` on **:3000** (which
+also proxies thumbnails at `/api/img`), so everything runs on one origin.
 
 **Setup (Python 3.8+ and Node 18+):**
 ```bash
@@ -116,12 +116,14 @@ Add your free Gemini key (from <https://aistudio.google.com/apikey>) to `.env`:
 GEMINI_API_KEY=your-real-key
 # GEMINI_MODEL=gemini-2.5-flash   # optional override (default)
 ```
-Run both servers (two terminals):
+Run the servers (separate terminals):
 ```bash
-python local/server.py  # API on :5001
-npm run serve:research  # page on :3002  (or: node serve.mjs)
+npm start               # site + image proxy on :3000
+python local/server.py  # article/Gemini API on :5001
 ```
-Open <http://localhost:3002/trend-finder-upgrade.html>.
+Open <http://localhost:3000> and click **Trend Finder Upgrade**. (The pages
+auto-detect localhost and call the Flask servers; on Vercel they use the relative
+`/api/*` functions. `serve.mjs` on :3002 still works but is no longer required.)
 
 **Using it**
 1. Search a topic → up to 5 article cards (rank, title, source, thumbnail).

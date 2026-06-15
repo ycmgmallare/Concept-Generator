@@ -57,6 +57,34 @@ app.get("/api/health", (_req, res) =>
   res.json({ ok: true, hasKey: Boolean(process.env.KIE_AI_API_KEY?.trim()) })
 );
 
+// GET /api/img?url=... — image proxy for the Trend Finder Upgrade thumbnails,
+// so all pages run on this single :3000 origin locally (mirrors api/img.js on
+// Vercel). Reddit/news images often block hotlinking or lack CORS headers.
+app.get("/api/img", async (req, res) => {
+  const target = req.query.url;
+  if (!target || !/^https?:\/\//i.test(target)) {
+    return res.status(400).send("Provide an http(s) image url via ?url=");
+  }
+  try {
+    const upstream = await fetch(target, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+      },
+    });
+    if (!upstream.ok) return res.status(upstream.status).end();
+    const type = upstream.headers.get("content-type") || "image/jpeg";
+    if (!type.startsWith("image/")) return res.status(415).end();
+    res.set("Content-Type", type);
+    res.set("Cache-Control", "public, max-age=86400");
+    res.send(Buffer.from(await upstream.arrayBuffer()));
+  } catch (err) {
+    res.status(502).send("Image proxy failed: " + err.message);
+  }
+});
+
 // POST /api/concepts — body { idea, theme, products }
 // Returns the 6 concepts with finished front/back prompts. No Kie call here.
 app.post("/api/concepts", (req, res) => {
